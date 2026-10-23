@@ -1,0 +1,139 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{E78FCFFC-B338-4FAF-BF89-203E351A9063}|BLL\\BLL.vcxproj|C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\GameLogic.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{E78FCFFC-B338-4FAF-BF89-203E351A9063}|BLL\\BLL.vcxproj|solutionrelative:BLL\\GameLogic.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E78FCFFC-B338-4FAF-BF89-203E351A9063}|BLL\\BLL.vcxproj|C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\Player.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{E78FCFFC-B338-4FAF-BF89-203E351A9063}|BLL\\BLL.vcxproj|solutionrelative:BLL\\Player.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E78FCFFC-B338-4FAF-BF89-203E351A9063}|BLL\\BLL.vcxproj|C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\Maze.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{E78FCFFC-B338-4FAF-BF89-203E351A9063}|BLL\\BLL.vcxproj|solutionrelative:BLL\\Maze.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5515E5D3-4FFE-4C14-98DD-6E578C6A70FD}|ConsoleApplication1\\ConsoleApplication1.vcxproj|C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\ConsoleApplication1\\SaveManager.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{5515E5D3-4FFE-4C14-98DD-6E578C6A70FD}|ConsoleApplication1\\ConsoleApplication1.vcxproj|solutionrelative:ConsoleApplication1\\SaveManager.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5515E5D3-4FFE-4C14-98DD-6E578C6A70FD}|ConsoleApplication1\\ConsoleApplication1.vcxproj|C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\ConsoleApplication1\\MazeLoader.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{5515E5D3-4FFE-4C14-98DD-6E578C6A70FD}|ConsoleApplication1\\ConsoleApplication1.vcxproj|solutionrelative:ConsoleApplication1\\MazeLoader.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{33EC4133-5C8C-4771-BBD6-9F561679C70C}|Wolcan\\Wolcan.vcxproj|C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\Wolcan\\GameScreen.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{33EC4133-5C8C-4771-BBD6-9F561679C70C}|Wolcan\\Wolcan.vcxproj|solutionrelative:Wolcan\\GameScreen.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{33EC4133-5C8C-4771-BBD6-9F561679C70C}|Wolcan\\Wolcan.vcxproj|C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\Wolcan\\MainMenu.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{33EC4133-5C8C-4771-BBD6-9F561679C70C}|Wolcan\\Wolcan.vcxproj|solutionrelative:Wolcan\\MainMenu.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GameLogic.cpp",
+              "DocumentMoniker": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\GameLogic.cpp",
+              "RelativeDocumentMoniker": "BLL\\GameLogic.cpp",
+              "ToolTip": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\GameLogic.cpp",
+              "RelativeToolTip": "BLL\\GameLogic.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-23T12:42:37.727Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Player.cpp",
+              "DocumentMoniker": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\Player.cpp",
+              "RelativeDocumentMoniker": "BLL\\Player.cpp",
+              "ToolTip": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\Player.cpp",
+              "RelativeToolTip": "BLL\\Player.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-23T12:42:28.162Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "SaveManager.cpp",
+              "DocumentMoniker": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\ConsoleApplication1\\SaveManager.cpp",
+              "RelativeDocumentMoniker": "ConsoleApplication1\\SaveManager.cpp",
+              "ToolTip": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\ConsoleApplication1\\SaveManager.cpp",
+              "RelativeToolTip": "ConsoleApplication1\\SaveManager.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-23T12:42:04.874Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "GameScreen.cpp",
+              "DocumentMoniker": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\Wolcan\\GameScreen.cpp",
+              "RelativeDocumentMoniker": "Wolcan\\GameScreen.cpp",
+              "ToolTip": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\Wolcan\\GameScreen.cpp",
+              "RelativeToolTip": "Wolcan\\GameScreen.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-23T12:41:28.753Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "MazeLoader.cpp",
+              "DocumentMoniker": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\ConsoleApplication1\\MazeLoader.cpp",
+              "RelativeDocumentMoniker": "ConsoleApplication1\\MazeLoader.cpp",
+              "ToolTip": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\ConsoleApplication1\\MazeLoader.cpp",
+              "RelativeToolTip": "ConsoleApplication1\\MazeLoader.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-23T12:40:43.411Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Maze.cpp",
+              "DocumentMoniker": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\Maze.cpp",
+              "RelativeDocumentMoniker": "BLL\\Maze.cpp",
+              "ToolTip": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\BLL\\Maze.cpp",
+              "RelativeToolTip": "BLL\\Maze.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-23T12:40:11.086Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "MainMenu.cpp",
+              "DocumentMoniker": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\Wolcan\\MainMenu.cpp",
+              "RelativeDocumentMoniker": "Wolcan\\MainMenu.cpp",
+              "ToolTip": "C:\\Users\\niki1\\Desktop\\WOLCAN\\Wolcan\\Wolcan\\Wolcan\\MainMenu.cpp",
+              "RelativeToolTip": "Wolcan\\MainMenu.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-23T12:37:44.408Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

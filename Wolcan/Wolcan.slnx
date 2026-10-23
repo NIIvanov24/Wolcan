@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="BLL/BLL.vcxproj" />
+  <Project Path="ConsoleApplication1/ConsoleApplication1.vcxproj" />
+  <Project Path="Wolcan/Wolcan.vcxproj" />
+</Solution>
