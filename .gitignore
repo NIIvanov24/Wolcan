@@ -1,0 +1,14 @@
+/.vs/
+**/.vs/
+/build/
+**/x64/
+**/Win32/
+**/Debug/
+**/Release/
+*.vcxproj.user
+*.slnx.user
+/docs/
+/tests/
+/screenshots/
+/references/
+/tmp/

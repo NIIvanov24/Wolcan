@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <RaylibRoot>$(MSBuildThisFileDirectory)..\build\$(Platform)\raylib</RaylibRoot>
+    <RaylibBuildScript>$(MSBuildThisFileDirectory)..\scripts\Build.ps1</RaylibBuildScript>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(RaylibRoot)\include;$(ProjectDir)..\BLL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(RaylibRoot)\lib\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>raylib.lib;winmm.lib;gdi32.lib;user32.lib;shell32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <Target Name="EnsureRaylib" BeforeTargets="PrepareForBuild"
+          Condition="'$(DesignTimeBuild)' != 'true' and !Exists('$(RaylibRoot)\lib\$(Configuration)\raylib.lib')">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(RaylibBuildScript)&quot; -Configuration $(Configuration) -Architecture $(Platform) -RaylibOnly" />
+  </Target>
+</Project>
