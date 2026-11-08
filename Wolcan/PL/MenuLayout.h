@@ -2,7 +2,7 @@
 
 #include "raylib.h"
 
-enum class MenuAction { None = -1, DecreaseSize, IncreaseSize, Start, Quit };
+enum class MenuAction { None = -1, DecreaseSize, IncreaseSize, Start, Quit, Easy, Normal, Hard };
 
 struct MenuLayout
 {
@@ -10,7 +10,7 @@ struct MenuLayout
     float top;
     float centerX;
     Rectangle panel;
-    Rectangle buttons[4];
+    Rectangle buttons[7];
 };
 
 MenuLayout createMenuLayout(int screenWidth, int screenHeight);

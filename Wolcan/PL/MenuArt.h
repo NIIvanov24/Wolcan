@@ -1,12 +1,13 @@
 #pragma once
 
 #include "MenuLayout.h"
+#include "GameTypes.h"
 
 struct MenuVisualState
 {
     float elapsed = 0.0f;
-    float hoverAmounts[4] = {};
-    float pressAmounts[4] = {};
+    float hoverAmounts[7] = {};
+    float pressAmounts[7] = {};
 };
 
 class MenuArt
@@ -17,7 +18,8 @@ public:
     MenuArt(const MenuArt& other) = delete;
     MenuArt& operator=(const MenuArt& other) = delete;
 
-    void draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize) const;
+    void draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize,
+        Difficulty difficulty = Difficulty::Normal) const;
 
 private:
     Texture2D background = {};

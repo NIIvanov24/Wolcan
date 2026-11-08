@@ -8,7 +8,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 option(WOLCAN_BUILD_GAME "Build the raylib presentation layer" ON)
 
-add_library(DAL STATIC Wolcan/DAL/MazeLoader.cpp)
+add_library(DAL STATIC Wolcan/DAL/MazeLoader.cpp Wolcan/DAL/SaveManager.cpp)
 target_include_directories(DAL PUBLIC Wolcan/DAL)
 
 add_library(BLL STATIC
@@ -44,7 +44,7 @@ if(WOLCAN_BUILD_GAME)
 
     add_executable(Wolcan
         Wolcan/PL/Main.cpp Wolcan/PL/MainMenu.cpp Wolcan/PL/GameScreen.cpp
-        Wolcan/PL/MenuLayout.cpp Wolcan/PL/MenuArt.cpp Wolcan/PL/WindowControls.cpp)
+        Wolcan/PL/MenuLayout.cpp Wolcan/PL/MenuArt.cpp Wolcan/PL/WindowControls.cpp Wolcan/PL/GameArt.cpp)
     target_link_libraries(Wolcan PRIVATE BLL raylib)
     # Keep assets beside the executable for IDE launches and arbitrary working directories.
     add_custom_target(WolcanAssets ALL

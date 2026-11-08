@@ -148,6 +148,7 @@
     <ClCompile Include="MenuLayout.cpp" />
     <ClCompile Include="MenuArt.cpp" />
     <ClCompile Include="WindowControls.cpp" />
+    <ClCompile Include="GameArt.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainMenu.h" />
@@ -155,6 +156,7 @@
     <ClInclude Include="MenuLayout.h" />
     <ClInclude Include="MenuArt.h" />
     <ClInclude Include="WindowControls.h" />
+    <ClInclude Include="GameArt.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BLL\BLL.vcxproj">

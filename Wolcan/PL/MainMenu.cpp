@@ -9,11 +9,12 @@ bool menuActionEnabled(int buttonIndex, int selectedSize)
     return (buttonIndex != 0 || selectedSize > 10) && (buttonIndex != 1 || selectedSize < 50);
 }
 
-int runMainMenu()
+int runMainMenu(Difficulty* selectedDifficulty)
 {
     MenuArt menuArt;
     MenuVisualState visualState;
-    int selectedSize = 10;
+    Difficulty difficulty = Difficulty::Normal;
+    int selectedSize = 25;
     int pressedButton = -1;
     int pendingSelection = -1;
     float selectionDelay = 0.0f;
@@ -26,7 +27,7 @@ int runMainMenu()
         MenuLayout layout = createMenuLayout(GetScreenWidth(), GetScreenHeight());
         Vector2 mousePosition = GetMousePosition();
         int hoveredButton = -1;
-        const int buttonCount = 4;
+        const int buttonCount = 7;
         for (int buttonIndex = 0; buttonIndex < buttonCount; buttonIndex++)
         {
             if (menuActionEnabled(buttonIndex, selectedSize)
@@ -50,12 +51,20 @@ int runMainMenu()
             }
             if (IsKeyPressed(KEY_ENTER)) { activatedButton = static_cast<int>(MenuAction::Start); }
             if (IsKeyPressed(KEY_ESCAPE)) { activatedButton = static_cast<int>(MenuAction::Quit); }
+            if (IsKeyPressed(KEY_ONE)) { activatedButton = static_cast<int>(MenuAction::Easy); }
+            if (IsKeyPressed(KEY_TWO)) { activatedButton = static_cast<int>(MenuAction::Normal); }
+            if (IsKeyPressed(KEY_THREE)) { activatedButton = static_cast<int>(MenuAction::Hard); }
 
             if (activatedButton >= 0 && menuActionEnabled(activatedButton, selectedSize))
             {
                 visualState.pressAmounts[activatedButton] = 1.0f;
                 if (activatedButton == static_cast<int>(MenuAction::DecreaseSize)) { selectedSize--; }
                 else if (activatedButton == static_cast<int>(MenuAction::IncreaseSize)) { selectedSize++; }
+                else if (activatedButton >= static_cast<int>(MenuAction::Easy))
+                {
+                    difficulty = static_cast<Difficulty>(activatedButton - static_cast<int>(MenuAction::Easy));
+                    selectedSize = difficulty == Difficulty::Easy ? 15 : difficulty == Difficulty::Hard ? 41 : 25;
+                }
                 else
                 {
                     pendingSelection = activatedButton == static_cast<int>(MenuAction::Start) ? selectedSize : 0;
@@ -78,7 +87,7 @@ int runMainMenu()
 
         BeginDrawing();
         ClearBackground({13, 8, 6, 255});
-        menuArt.draw(layout, visualState, selectedSize);
+        menuArt.draw(layout, visualState, selectedSize, difficulty);
         EndDrawing();
 
         if (pendingSelection >= 0)
@@ -87,6 +96,7 @@ int runMainMenu()
             if (selectionDelay <= 0.0f)
             {
                 SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+                if (selectedDifficulty != nullptr) { *selectedDifficulty = difficulty; }
                 return pendingSelection;
             }
         }

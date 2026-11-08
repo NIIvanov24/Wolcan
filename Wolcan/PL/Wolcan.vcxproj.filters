@@ -27,6 +27,7 @@
     <ClCompile Include="MenuLayout.cpp"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="MenuArt.cpp"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="WindowControls.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="GameArt.cpp"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainMenu.h">
@@ -38,5 +39,6 @@
     <ClInclude Include="MenuLayout.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="MenuArt.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="WindowControls.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="GameArt.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

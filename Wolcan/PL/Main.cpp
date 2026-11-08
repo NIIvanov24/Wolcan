@@ -4,11 +4,47 @@
 
 #include <exception>
 #include <iostream>
+#include <cstdlib>
+#include <memory>
+#include <charconv>
+#include <stdexcept>
+#include <string>
 
-int main()
+std::string recordStoragePath()
+{
+#if defined(_WIN32)
+    char* directory = nullptr;
+    std::size_t length = 0;
+    if (_dupenv_s(&directory, &length, "LOCALAPPDATA") == 0 && directory != nullptr)
+    {
+        std::unique_ptr<char, decltype(&std::free)> ownedDirectory(directory, &std::free);
+        if (length > 1) { return std::string(directory) + "/Wolcan/best-times.txt"; }
+    }
+#endif
+    return std::string(GetApplicationDirectory()) + "user-data/best-times.txt";
+}
+
+std::uint32_t requestedSeed(int argumentCount, char* arguments[])
+{
+    if (argumentCount == 1) { return 0; }
+    if (argumentCount != 3 || std::string(arguments[1]) != "--seed")
+    {
+        throw std::invalid_argument("Optional launch argument: --seed <1..4294967295>");
+    }
+    std::string text = arguments[2];
+    std::uint32_t seed = 0;
+    auto result = std::from_chars(text.data(), text.data() + text.size(), seed);
+    if (result.ec != std::errc{} || result.ptr != text.data() + text.size() || seed == 0)
+    {
+        throw std::invalid_argument("The seed must be a nonzero unsigned 32-bit integer.");
+    }
+    return seed;
+}
+
+int main(int argumentCount, char* arguments[])
 {
     const int screenWidth = 1280;
-    const int screenHeight = 800;
+    const int screenHeight = 720;
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(screenWidth, screenHeight, "Wolcan - Volcanic Isle");
     if (!IsWindowReady())
@@ -22,10 +58,12 @@ int main()
     int availableHeight = GetMonitorHeight(monitor) - 80;
     int windowWidth = screenWidth < availableWidth ? screenWidth : availableWidth;
     int windowHeight = screenHeight < availableHeight ? screenHeight : availableHeight;
-    if (windowWidth < 900) { windowWidth = 900; }
-    if (windowHeight < 640) { windowHeight = 640; }
+    if (windowWidth * 9 > windowHeight * 16) { windowWidth = windowHeight * 16 / 9; }
+    else { windowHeight = windowWidth * 9 / 16; }
+    if (windowWidth < 960) { windowWidth = 960; }
+    if (windowHeight < 540) { windowHeight = 540; }
     SetWindowSize(windowWidth, windowHeight);
-    SetWindowMinSize(900, 640);
+    SetWindowMinSize(960, 540);
 
     // Escape is handled by each screen: back to menu in-game, quit in menu.
     SetExitKey(KEY_NULL);
@@ -34,15 +72,18 @@ int main()
     int exitCode = 0;
     try
     {
+        std::uint32_t seed = requestedSeed(argumentCount, arguments);
+        std::string recordFile = recordStoragePath();
         while (!WindowShouldClose())
         {
-            int selectedSize = runMainMenu();
+            Difficulty difficulty = Difficulty::Normal;
+            int selectedSize = runMainMenu(&difficulty);
             if (selectedSize == 0 || WindowShouldClose())
             {
                 break;
             }
 
-            GameLogic game(selectedSize, selectedSize);
+            GameLogic game(selectedSize, selectedSize, difficulty, seed, recordFile);
             runGame(game);
         }
     }

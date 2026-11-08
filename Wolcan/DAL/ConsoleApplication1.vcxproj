@@ -146,6 +146,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MazeLoader.h" />
+    <ClInclude Include="SaveManager.h" />
   </ItemGroup>
   <Import Project="..\ProjectSettings.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,125 +1,101 @@
 #include "GameScreen.h"
+#include "GameArt.h"
 #include "WindowControls.h"
 #include "raylib.h"
 
-void handleMovement(GameLogic& game)
+#include <algorithm>
+#include <cmath>
+
+void resetGameVisuals(GameVisualState& state, const GameLogic& game)
 {
-    // A single key press requests one cell. BLL decides whether it is legal.
-    if (IsKeyPressed(KEY_UP))
-    {
-        game.tryMovePlayer(-1, 0);
-    }
-    else if (IsKeyPressed(KEY_DOWN))
-    {
-        game.tryMovePlayer(1, 0);
-    }
-    else if (IsKeyPressed(KEY_LEFT))
-    {
-        game.tryMovePlayer(0, -1);
-    }
-    else if (IsKeyPressed(KEY_RIGHT))
-    {
-        game.tryMovePlayer(0, 1);
-    }
-}
-
-void drawMaze(const GameLogic& game)
-{
-    const Maze& maze = game.getMaze();
-    const Player& player = game.getPlayer();
-    // Keep cells at least 10 pixels high at 50x50: raylib's default font
-    // clamps smaller requests to 10 pixels.
-    int gridAreaSize = GetScreenHeight() - 140;
-    if (gridAreaSize > GetScreenWidth() - 80) { gridAreaSize = GetScreenWidth() - 80; }
-    int largestDimension = maze.getRowCount() > maze.getColumnCount()
-        ? maze.getRowCount() : maze.getColumnCount();
-    int cellSize = gridAreaSize / largestDimension;
-    int gridLeft = (GetScreenWidth() - maze.getColumnCount() * cellSize) / 2;
-    int gridTop = 70;
-    int fontSize = cellSize / 2;
-    if (fontSize < 10)
-    {
-        fontSize = 10;
-    }
-
-    int rowCount = maze.getRowCount();
-    int columnCount = maze.getColumnCount();
-    for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
-    {
-        for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
-        {
-            int cellLeft = gridLeft + columnIndex * cellSize;
-            int cellTop = gridTop + rowIndex * cellSize;
-            char cellSymbol[2] = {maze.getCell(rowIndex, columnIndex), 0};
-            Color cellColor = cellSymbol[0] == '#' ? DARKBLUE : DARKGRAY;
-            Color textColor = cellSymbol[0] == '#' ? SKYBLUE : GRAY;
-
-            if (rowIndex == rowCount - 1 && columnIndex == columnCount - 1)
-            {
-                cellSymbol[0] = 'E';
-                cellColor = DARKGREEN;
-                textColor = RAYWHITE;
-            }
-            if (rowIndex == player.getRow() && columnIndex == player.getColumn())
-            {
-                cellSymbol[0] = '@';
-                cellColor = GOLD;
-                textColor = BLACK;
-            }
-
-            DrawRectangle(cellLeft, cellTop, cellSize - 1, cellSize - 1, cellColor);
-            int textLeft = cellLeft + (cellSize - MeasureText(cellSymbol, fontSize)) / 2;
-            int textTop = cellTop + (cellSize - fontSize) / 2;
-            DrawText(cellSymbol, textLeft, textTop, fontSize, textColor);
-        }
-    }
-}
-
-void drawGameScreen(const GameLogic& game)
-{
-    DrawText("WOLCAN", 30, 22, 30, SKYBLUE);
-    DrawText(TextFormat("Position: %i, %i    Moves: %i",
-        game.getPlayer().getRow(), game.getPlayer().getColumn(), game.getMoveCount()),
-        410, 28, 22, RAYWHITE);
-    drawMaze(game);
-    DrawText("Arrows: move    R: restart    ESC: menu", 150, GetScreenHeight() - 68, 22, RAYWHITE);
-    DrawText("@ Player    # Wall    . Passage    E Exit", 150, GetScreenHeight() - 35, 20, LIGHTGRAY);
-
-    if (game.hasWon())
-    {
-        int panelTop = GetScreenHeight() / 2 - 90;
-        DrawRectangle(210, panelTop, 580, 180, DARKBLUE);
-        DrawRectangleLines(210, panelTop, 580, 180, GOLD);
-        DrawText("MAZE COMPLETE!", 255, panelTop + 30, 38, GOLD);
-        DrawText("R: play again    ESC: main menu", 255, panelTop + 105, 24, RAYWHITE);
-    }
+    state = GameVisualState{};
+    state.playerRow = static_cast<float>(game.getPlayer().getRow());
+    state.playerColumn = static_cast<float>(game.getPlayer().getColumn());
 }
 
 void runGame(GameLogic& game)
 {
+    GameArt gameArt;
+    GameVisualState visualState;
+    resetGameVisuals(visualState, game);
+    float startRow = visualState.playerRow;
+    float startColumn = visualState.playerColumn;
+    float progress = 1.0f;
+    float repeatCooldown = 0.0f;
+    int bufferedDirection = -1;
+    int previousHeldDirection = -1;
+    int keys[4] = {KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT};
+    int rowOffsets[4] = {-1, 1, 0, 0};
+    int columnOffsets[4] = {0, 0, -1, 1};
+    const int directionCount = 4;
+
     while (!WindowShouldClose())
     {
         handleWindowShortcuts();
-        bool shouldReturnToMenu = IsKeyPressed(KEY_ESCAPE);
-        if (!shouldReturnToMenu && IsKeyPressed(KEY_R))
+        float rawFrameTime = GetFrameTime();
+        float animationTime = std::clamp(rawFrameTime, 0.0f, 0.05f);
+        bool returnToMenu = IsKeyPressed(KEY_ESCAPE);
+        if (!IsWindowFocused()) { game.setPaused(true); }
+        if (!returnToMenu) { game.updateTime(static_cast<double>(rawFrameTime)); }
+        if (IsKeyPressed(KEY_P) && IsWindowFocused()) { game.setPaused(!game.isPaused()); }
+
+        bool changedLevel = false;
+        if (IsKeyPressed(KEY_R)) { game.restart(false); changedLevel = true; }
+        else if (IsKeyPressed(KEY_T)) { game.restart(true); changedLevel = true; }
+        else if (IsKeyPressed(KEY_N)) { changedLevel = game.nextLevel(); }
+        if (changedLevel)
         {
-            game.restart();
+            resetGameVisuals(visualState, game);
+            startRow = visualState.playerRow;
+            startColumn = visualState.playerColumn;
+            progress = 1.0f;
+            repeatCooldown = 0.0f;
+            bufferedDirection = -1;
+            previousHeldDirection = -1;
         }
-        else if (!shouldReturnToMenu)
+        else if (!game.isPaused())
         {
-            handleMovement(game);
+            visualState.idleTime += animationTime;
+            repeatCooldown = std::max(0.0f, repeatCooldown - animationTime);
+            progress = std::min(1.0f, progress + animationTime / 0.105f);
+            visualState.playerRow = startRow + (static_cast<float>(game.getPlayer().getRow()) - startRow) * progress;
+            visualState.playerColumn = startColumn + (static_cast<float>(game.getPlayer().getColumn()) - startColumn) * progress;
+            visualState.moving = progress < 1.0f;
+            if (visualState.moving) { visualState.walkPhase = std::fmod(visualState.walkPhase + animationTime * 18.0f, 6.2831853f); }
+
+            int heldDirection = -1;
+            for (int directionIndex = 0; directionIndex < directionCount; directionIndex++)
+            {
+                if (IsKeyPressed(keys[directionIndex])) { bufferedDirection = directionIndex; }
+                if (IsKeyDown(keys[directionIndex])) { heldDirection = directionIndex; }
+            }
+            // Finish each cardinal tween before accepting a turn. Buffered input
+            // stays responsive without visually cutting diagonally through a wall.
+            if (!returnToMenu && !game.hasWon() && progress >= 1.0f)
+            {
+                int direction = bufferedDirection >= 0 ? bufferedDirection : heldDirection;
+                bool requested = bufferedDirection >= 0 || heldDirection != previousHeldDirection || repeatCooldown <= 0.0f;
+                if (direction >= 0 && requested)
+                {
+                    visualState.facing = direction;
+                    if (game.tryMovePlayer(rowOffsets[direction], columnOffsets[direction]))
+                    {
+                        startRow = visualState.playerRow;
+                        startColumn = visualState.playerColumn;
+                        progress = 0.0f;
+                        visualState.moving = true;
+                    }
+                    repeatCooldown = 0.12f;
+                    bufferedDirection = -1;
+                }
+            }
+            previousHeldDirection = heldDirection;
         }
 
         BeginDrawing();
-        ClearBackground(BLACK);
-        drawGameScreen(game);
+        ClearBackground({7, 8, 12, 255});
+        gameArt.draw(game, visualState);
         EndDrawing();
-
-        // EndDrawing polls events. Finish this frame so the menu cannot reuse
-        // the Escape press that requested this screen change.
-        if (shouldReturnToMenu)
-        {
-            return;
-        }
+        if (returnToMenu) { return; }
     }
 }

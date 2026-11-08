@@ -1,3 +1,4 @@
 #pragma once
+#include "GameTypes.h"
 
-int runMainMenu();
+int runMainMenu(Difficulty* selectedDifficulty = nullptr);

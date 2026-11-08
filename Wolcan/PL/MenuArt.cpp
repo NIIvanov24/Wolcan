@@ -131,7 +131,7 @@ void MenuArt::drawButton(Rectangle rectangle, int buttonIndex, const MenuVisualS
     }
 }
 
-void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize) const
+void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize, Difficulty difficulty) const
 {
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
@@ -198,13 +198,30 @@ void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState,
         16.0f * scale, 2.5f * scale, menuOpacity(muted, appearance));
     drawCentered(bodyFont, TextFormat("%02i  x  %02i", selectedSize, selectedSize), layout.centerX,
         layout.top + 341.0f * scale, 43.0f * scale, 2.0f * scale, menuOpacity(cream, appearance));
-    DrawRectangleRec({panel.x + 38.0f * scale, layout.top + 405.0f * scale, panel.width - 76.0f * scale, scale},
+    DrawRectangleRec({panel.x + 38.0f * scale, layout.top + 438.0f * scale, panel.width - 76.0f * scale, scale},
         menuOpacity({107, 60, 35, 150}, appearance));
     const int buttonCount = 4;
     for (int buttonIndex = 0; buttonIndex < buttonCount; buttonIndex++)
     {
         bool enabled = (buttonIndex != 0 || selectedSize > 10) && (buttonIndex != 1 || selectedSize < 50);
         drawButton(layout.buttons[buttonIndex], buttonIndex, visualState, scale, enabled, appearance);
+    }
+    const int modeCount = 3;
+    const char* modeNames[modeCount] = {"1  EASY", "2  NORMAL", "3  HARD"};
+    for (int modeIndex = 0; modeIndex < modeCount; modeIndex++)
+    {
+        int buttonIndex = modeIndex + static_cast<int>(MenuAction::Easy);
+        Rectangle button = layout.buttons[buttonIndex];
+        button.y += visualState.pressAmounts[buttonIndex] * 2.0f * scale;
+        bool selected = static_cast<int>(difficulty) == modeIndex;
+        Color fill = selected ? Color{205, 125, 43, 255}
+            : menuBlend({49, 27, 19, 255}, {94, 50, 26, 255}, visualState.hoverAmounts[buttonIndex]);
+        DrawRectangleRec(button, menuOpacity({118, 66, 35, 255}, appearance));
+        DrawRectangleRec({button.x + scale, button.y + scale, button.width - 2.0f * scale, button.height - 2.0f * scale},
+            menuOpacity(fill, appearance));
+        drawCentered(bodyFont, modeNames[modeIndex], button.x + button.width * 0.5f,
+            button.y + 6.0f * scale, 18.0f * scale, 0.3f * scale,
+            menuOpacity(selected ? Color{33, 18, 11, 255} : cream, appearance));
     }
     drawCentered(bodyFont, "ARROWS: SIZE     ENTER: PLAY     ESC: QUIT", layout.centerX,
         layout.top + 580.0f * scale, 16.0f * scale, 0.7f * scale, menuOpacity(muted, appearance * 0.9f));

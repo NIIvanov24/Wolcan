@@ -14,8 +14,11 @@ MenuLayout createMenuLayout(int screenWidth, int screenHeight)
         {
             {centerX - 194.0f * scale, top + 344.0f * scale, 44.0f * scale, 44.0f * scale},
             {centerX + 150.0f * scale, top + 344.0f * scale, 44.0f * scale, 44.0f * scale},
-            {centerX - 190.0f * scale, top + 424.0f * scale, 380.0f * scale, 64.0f * scale},
-            {centerX - 190.0f * scale, top + 504.0f * scale, 380.0f * scale, 54.0f * scale}
+            {centerX - 190.0f * scale, top + 452.0f * scale, 380.0f * scale, 56.0f * scale},
+            {centerX - 190.0f * scale, top + 522.0f * scale, 380.0f * scale, 46.0f * scale},
+            {centerX - 190.0f * scale, top + 394.0f * scale, 116.0f * scale, 32.0f * scale},
+            {centerX - 58.0f * scale, top + 394.0f * scale, 116.0f * scale, 32.0f * scale},
+            {centerX + 74.0f * scale, top + 394.0f * scale, 116.0f * scale, 32.0f * scale}
         }};
 }
 
