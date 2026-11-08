@@ -7,14 +7,25 @@
 
 int main()
 {
-    const int screenWidth = 1000;
-    const int screenHeight = 640;
-    InitWindow(screenWidth, screenHeight, "Wolcan - Maze Starter");
+    const int screenWidth = 1280;
+    const int screenHeight = 800;
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    InitWindow(screenWidth, screenHeight, "Wolcan - Volcanic Isle");
     if (!IsWindowReady())
     {
         std::cerr << "The game window could not be initialized." << std::endl;
         return 1;
     }
+
+    int monitor = GetCurrentMonitor();
+    int availableWidth = GetMonitorWidth(monitor) - 80;
+    int availableHeight = GetMonitorHeight(monitor) - 80;
+    int windowWidth = screenWidth < availableWidth ? screenWidth : availableWidth;
+    int windowHeight = screenHeight < availableHeight ? screenHeight : availableHeight;
+    if (windowWidth < 900) { windowWidth = 900; }
+    if (windowHeight < 640) { windowHeight = 640; }
+    SetWindowSize(windowWidth, windowHeight);
+    SetWindowMinSize(900, 640);
 
     // Escape is handled by each screen: back to menu in-game, quit in menu.
     SetExitKey(KEY_NULL);

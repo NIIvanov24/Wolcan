@@ -1,4 +1,5 @@
 #include "GameScreen.h"
+#include "WindowControls.h"
 #include "raylib.h"
 
 void handleMovement(GameLogic& game)
@@ -29,6 +30,7 @@ void drawMaze(const GameLogic& game)
     // Keep cells at least 10 pixels high at 50x50: raylib's default font
     // clamps smaller requests to 10 pixels.
     int gridAreaSize = GetScreenHeight() - 140;
+    if (gridAreaSize > GetScreenWidth() - 80) { gridAreaSize = GetScreenWidth() - 80; }
     int largestDimension = maze.getRowCount() > maze.getColumnCount()
         ? maze.getRowCount() : maze.getColumnCount();
     int cellSize = gridAreaSize / largestDimension;
@@ -97,6 +99,7 @@ void runGame(GameLogic& game)
 {
     while (!WindowShouldClose())
     {
+        handleWindowShortcuts();
         bool shouldReturnToMenu = IsKeyPressed(KEY_ESCAPE);
         if (!shouldReturnToMenu && IsKeyPressed(KEY_R))
         {

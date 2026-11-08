@@ -1,51 +1,96 @@
 #include "MainMenu.h"
+#include "MenuArt.h"
+#include "WindowControls.h"
 
-#include "raylib.h"
+#include <algorithm>
 
-void drawMainMenu(int selectedSize)
+bool menuActionEnabled(int buttonIndex, int selectedSize)
 {
-    int panelLeft = (GetScreenWidth() - 620) / 2;
-    int panelTop = (GetScreenHeight() - 500) / 2 - 10;
-    DrawRectangle(panelLeft, panelTop, 620, 500, DARKBLUE);
-    DrawText("WOLCAN", panelLeft + 60, panelTop + 40, 64, RAYWHITE);
-    DrawText("Find your way through the maze", panelLeft + 60, panelTop + 120, 24, SKYBLUE);
-    DrawText("MAZE SIZE", panelLeft + 60, panelTop + 200, 22, RAYWHITE);
-    DrawText(TextFormat("<   %i x %i   >", selectedSize, selectedSize),
-        panelLeft + 60, panelTop + 245, 40, GOLD);
-    DrawText("Left / Right: choose a size from 10 to 50", panelLeft + 60, panelTop + 305, 21, LIGHTGRAY);
-    DrawText("ENTER  Start game", panelLeft + 60, panelTop + 375, 26, RAYWHITE);
-    DrawText("ESC     Quit", panelLeft + 60, panelTop + 420, 26, LIGHTGRAY);
-    DrawText("Starter edition | Four directions | One reachable exit", 200, GetScreenHeight() - 35, 20, GRAY);
+    return (buttonIndex != 0 || selectedSize > 10) && (buttonIndex != 1 || selectedSize < 50);
 }
 
 int runMainMenu()
 {
+    MenuArt menuArt;
+    MenuVisualState visualState;
     int selectedSize = 10;
+    int pressedButton = -1;
+    int pendingSelection = -1;
+    float selectionDelay = 0.0f;
+
     while (!WindowShouldClose())
     {
-        // Bound the menu selection; BLL independently validates its constructor input.
-        if (IsKeyPressed(KEY_LEFT) && selectedSize > 10)
+        handleWindowShortcuts();
+        float frameTime = std::clamp(GetFrameTime(), 0.0f, 0.05f);
+        visualState.elapsed += frameTime;
+        MenuLayout layout = createMenuLayout(GetScreenWidth(), GetScreenHeight());
+        Vector2 mousePosition = GetMousePosition();
+        int hoveredButton = -1;
+        const int buttonCount = 4;
+        for (int buttonIndex = 0; buttonIndex < buttonCount; buttonIndex++)
         {
-            selectedSize--;
+            if (menuActionEnabled(buttonIndex, selectedSize)
+                && CheckCollisionPointRec(mousePosition, layout.buttons[buttonIndex]))
+            {
+                hoveredButton = buttonIndex;
+            }
         }
-        else if (IsKeyPressed(KEY_RIGHT) && selectedSize < 50)
+        SetMouseCursor(hoveredButton >= 0 ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
+
+        int activatedButton = -1;
+        if (pendingSelection < 0)
         {
-            selectedSize++;
+            if (IsKeyPressed(KEY_LEFT) && selectedSize > 10) { selectedSize--; }
+            else if (IsKeyPressed(KEY_RIGHT) && selectedSize < 50) { selectedSize++; }
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { pressedButton = hoveredButton; }
+            if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+            {
+                if (pressedButton >= 0 && pressedButton == hoveredButton) { activatedButton = pressedButton; }
+                pressedButton = -1;
+            }
+            if (IsKeyPressed(KEY_ENTER)) { activatedButton = static_cast<int>(MenuAction::Start); }
+            if (IsKeyPressed(KEY_ESCAPE)) { activatedButton = static_cast<int>(MenuAction::Quit); }
+
+            if (activatedButton >= 0 && menuActionEnabled(activatedButton, selectedSize))
+            {
+                visualState.pressAmounts[activatedButton] = 1.0f;
+                if (activatedButton == static_cast<int>(MenuAction::DecreaseSize)) { selectedSize--; }
+                else if (activatedButton == static_cast<int>(MenuAction::IncreaseSize)) { selectedSize++; }
+                else
+                {
+                    pendingSelection = activatedButton == static_cast<int>(MenuAction::Start) ? selectedSize : 0;
+                    selectionDelay = 0.13f;
+                }
+            }
         }
 
-        if (IsKeyPressed(KEY_ENTER))
+        for (int buttonIndex = 0; buttonIndex < buttonCount; buttonIndex++)
         {
-            return selectedSize;
-        }
-        if (IsKeyPressed(KEY_ESCAPE))
-        {
-            return 0;
+            float hoverTarget = menuActionEnabled(buttonIndex, selectedSize)
+                && hoveredButton == buttonIndex ? 1.0f : 0.0f;
+            visualState.hoverAmounts[buttonIndex] += (hoverTarget - visualState.hoverAmounts[buttonIndex])
+                * std::min(1.0f, frameTime * 12.0f);
+            float pressTarget = pressedButton == buttonIndex && hoveredButton == buttonIndex
+                && IsMouseButtonDown(MOUSE_BUTTON_LEFT) ? 1.0f : 0.0f;
+            visualState.pressAmounts[buttonIndex] += (pressTarget - visualState.pressAmounts[buttonIndex])
+                * std::min(1.0f, frameTime * 14.0f);
         }
 
         BeginDrawing();
-        ClearBackground(BLACK);
-        drawMainMenu(selectedSize);
+        ClearBackground({13, 8, 6, 255});
+        menuArt.draw(layout, visualState, selectedSize);
         EndDrawing();
+
+        if (pendingSelection >= 0)
+        {
+            selectionDelay -= frameTime;
+            if (selectionDelay <= 0.0f)
+            {
+                SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+                return pendingSelection;
+            }
+        }
     }
+    SetMouseCursor(MOUSE_CURSOR_DEFAULT);
     return 0;
 }

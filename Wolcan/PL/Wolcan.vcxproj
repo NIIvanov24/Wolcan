@@ -145,10 +145,16 @@
     <ClCompile Include="GameScreen.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
+    <ClCompile Include="MenuLayout.cpp" />
+    <ClCompile Include="MenuArt.cpp" />
+    <ClCompile Include="WindowControls.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="GameScreen.h" />
+    <ClInclude Include="MenuLayout.h" />
+    <ClInclude Include="MenuArt.h" />
+    <ClInclude Include="WindowControls.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BLL\BLL.vcxproj">
@@ -160,4 +166,10 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="CopyRuntimeAssets" AfterTargets="Build">
+    <ItemGroup>
+      <RuntimeAsset Include="$(ProjectDir)..\..\assets\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(RuntimeAsset)" DestinationFiles="@(RuntimeAsset->'$(OutDir)assets\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

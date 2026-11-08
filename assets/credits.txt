@@ -1,0 +1,8 @@
+Volcano background: Joshua Groves, pixel-art volcano isle.
+Image supplied by the project owner as joshua-groves-pixel-art-volcano-isle.jpg.
+
+Title font: Press Start 2P, CodeMan38. See fonts/PressStart2P-OFL.txt.
+Interface font: Rajdhani, Indian Type Foundry. See fonts/Rajdhani-OFL.txt.
+Font files obtained from the official google/fonts repository.
+
+Button shapes, pixel chevrons, layout, glow and ember effects are drawn by the game.

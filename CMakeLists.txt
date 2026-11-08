@@ -42,11 +42,18 @@ if(WOLCAN_BUILD_GAME)
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/raylib/include")
     configure_file("${raylib_SOURCE_DIR}/src/raylib.h" "${CMAKE_BINARY_DIR}/raylib/include/raylib.h" COPYONLY)
 
-    add_executable(Wolcan Wolcan/PL/Main.cpp Wolcan/PL/MainMenu.cpp Wolcan/PL/GameScreen.cpp)
+    add_executable(Wolcan
+        Wolcan/PL/Main.cpp Wolcan/PL/MainMenu.cpp Wolcan/PL/GameScreen.cpp
+        Wolcan/PL/MenuLayout.cpp Wolcan/PL/MenuArt.cpp Wolcan/PL/WindowControls.cpp)
     target_link_libraries(Wolcan PRIVATE BLL raylib)
+    # Keep assets beside the executable for IDE launches and arbitrary working directories.
+    add_custom_target(WolcanAssets ALL
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:Wolcan>/assets"
+        VERBATIM)
+    add_dependencies(Wolcan WolcanAssets)
     set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Wolcan)
     if(MSVC)
-        target_compile_options(Wolcan PRIVATE /W4 /WX /permissive-)
+        target_compile_options(Wolcan PRIVATE /W4 /WX /permissive- /utf-8)
     endif()
 endif()
 
