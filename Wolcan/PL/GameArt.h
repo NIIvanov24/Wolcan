@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameLogic.h"
+#include "Progression.h"
 #include "raylib.h"
 
 struct GameVisualState
@@ -11,6 +12,13 @@ struct GameVisualState
     float idleTime = 0.0f;
     int facing = 1;
     bool moving = false;
+    float displayedHealth = 100.0f;
+    float damageFlash = 0.0f;
+    float pickupFlash = 0.0f;
+    float resultTime = 0.0f;
+    float toastTime = 0.0f;
+    int toastAchievement = -1;
+    RunRewards rewards = {};
 };
 
 struct GameViewLayout
@@ -31,14 +39,16 @@ GameViewLayout createGameViewLayout(int screenWidth, int screenHeight,
 class GameArt
 {
 public:
-    GameArt();
+    explicit GameArt(Skin skin = Skin::Explorer);
     ~GameArt();
     GameArt(const GameArt& other) = delete;
     GameArt& operator=(const GameArt& other) = delete;
 
-    void draw(const GameLogic& game, const GameVisualState& visualState) const;
+    void draw(const GameLogic& game, const GameVisualState& visualState,
+        const Progression* progression = nullptr) const;
 
 private:
+    Texture2D playerTexture = {};
     Font titleFont = {};
     Font bodyFont = {};
     bool ownsTitleFont = false;
@@ -48,8 +58,11 @@ private:
         float size, Color color, bool pixelFont = false) const;
     void centered(const GameViewLayout& layout, const char* text, float centerX,
         float y, float size, Color color, bool pixelFont = false) const;
-    void drawHud(const GameLogic& game, const GameViewLayout& layout) const;
+    void drawHud(const GameLogic& game, const GameVisualState& state, const GameViewLayout& layout) const;
     void drawMap(const GameLogic& game, const GameVisualState& state,
         const GameViewLayout& layout) const;
-    void drawOverlay(const GameLogic& game, const GameViewLayout& layout) const;
+    void drawOverlay(const GameLogic& game, const GameVisualState& state,
+        const GameViewLayout& layout, const Progression* progression) const;
+    void drawAchievementToast(const GameVisualState& state, const GameViewLayout& layout,
+        const Progression& progression) const;
 };

@@ -8,13 +8,14 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 option(WOLCAN_BUILD_GAME "Build the raylib presentation layer" ON)
 
-add_library(DAL STATIC Wolcan/DAL/MazeLoader.cpp Wolcan/DAL/SaveManager.cpp)
+add_library(DAL STATIC Wolcan/DAL/MazeLoader.cpp Wolcan/DAL/SaveManager.cpp Wolcan/DAL/ProfileStore.cpp)
 target_include_directories(DAL PUBLIC Wolcan/DAL)
 
 add_library(BLL STATIC
     Wolcan/BLL/Maze.cpp
     Wolcan/BLL/Player.cpp
     Wolcan/BLL/GameLogic.cpp
+    Wolcan/BLL/Progression.cpp
 )
 target_include_directories(BLL PUBLIC Wolcan/BLL)
 target_link_libraries(BLL PRIVATE DAL)

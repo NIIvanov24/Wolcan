@@ -1,4 +1,6 @@
 #pragma once
 #include "GameTypes.h"
 
-int runMainMenu(Difficulty* selectedDifficulty = nullptr);
+class Progression;
+
+int runMainMenu(Difficulty* selectedDifficulty = nullptr, Progression* progression = nullptr);

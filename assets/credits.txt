@@ -6,3 +6,5 @@ Interface font: Rajdhani, Indian Type Foundry. See fonts/Rajdhani-OFL.txt.
 Font files obtained from the official google/fonts repository.
 
 Button shapes, pixel chevrons, layout, glow and ember effects are drawn by the game.
+Explorer character: original Wolcan pixel art, exported from the game's drawing code to characters/explorer.png.
+Lava Walker, Obsidian Knight, Magma Spirit, Ash Wanderer and Crimson Guardian: original Wolcan pixel art variants.

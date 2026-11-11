@@ -10,16 +10,32 @@ MenuLayout createMenuLayout(int screenWidth, int screenHeight)
     float top = (height - 700.0f * scale) * 0.5f;
     float centerX = width * 0.5f;
     return {scale, top, centerX,
-        {centerX - 228.0f * scale, top + 288.0f * scale, 456.0f * scale, 320.0f * scale},
+        {centerX - 228.0f * scale, top + 288.0f * scale, 456.0f * scale, 373.0f * scale},
         {
             {centerX - 194.0f * scale, top + 344.0f * scale, 44.0f * scale, 44.0f * scale},
             {centerX + 150.0f * scale, top + 344.0f * scale, 44.0f * scale, 44.0f * scale},
             {centerX - 190.0f * scale, top + 452.0f * scale, 380.0f * scale, 56.0f * scale},
             {centerX - 190.0f * scale, top + 522.0f * scale, 380.0f * scale, 46.0f * scale},
-            {centerX - 190.0f * scale, top + 394.0f * scale, 116.0f * scale, 32.0f * scale},
-            {centerX - 58.0f * scale, top + 394.0f * scale, 116.0f * scale, 32.0f * scale},
-            {centerX + 74.0f * scale, top + 394.0f * scale, 116.0f * scale, 32.0f * scale}
+            {centerX - 190.0f * scale, top + 394.0f * scale, 88.0f * scale, 32.0f * scale},
+            {centerX - 94.0f * scale, top + 394.0f * scale, 88.0f * scale, 32.0f * scale},
+            {centerX + 2.0f * scale, top + 394.0f * scale, 88.0f * scale, 32.0f * scale},
+            {centerX + 98.0f * scale, top + 394.0f * scale, 92.0f * scale, 32.0f * scale},
+            {centerX - 190.0f * scale, top + 579.0f * scale, 154.0f * scale, 38.0f * scale},
+            {centerX - 26.0f * scale, top + 579.0f * scale, 216.0f * scale, 38.0f * scale}
         }};
+}
+
+ProfileLayout createProfileLayout(const MenuLayout& layout)
+{
+    float scale = layout.scale;
+    float left = layout.centerX - 430.0f * scale;
+    float top = layout.top + 55.0f * scale;
+    return {{left, top, 860.0f * scale, 590.0f * scale}, {
+        {left + 28.0f * scale, top + 531.0f * scale, 124.0f * scale, 38.0f * scale},
+        {left + 473.0f * scale, top + 361.0f * scale, 77.0f * scale, 42.0f * scale},
+        {left + 754.0f * scale, top + 361.0f * scale, 77.0f * scale, 42.0f * scale},
+        {left + 560.0f * scale, top + 361.0f * scale, 184.0f * scale, 42.0f * scale}
+    }};
 }
 
 Rectangle calculateCoverSource(int imageWidth, int imageHeight, int screenWidth, int screenHeight)

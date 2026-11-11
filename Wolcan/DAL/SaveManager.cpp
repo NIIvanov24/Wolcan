@@ -1,4 +1,5 @@
 #include "SaveManager.h"
+#include "SaveFile.h"
 
 #include <cerrno>
 #include <cmath>
@@ -21,12 +22,69 @@
 #include <windows.h>
 #else
 #include <fcntl.h>
+#include <sys/file.h>
 #include <unistd.h>
 #endif
 
 namespace
 {
-bool isValidKey(const std::string& levelKey)
+class SaveLock
+{
+public:
+    explicit SaveLock(std::filesystem::path filePath)
+    {
+        // The lock must survive atomic replacement of the actual save file.
+        filePath += ".lock";
+#ifdef _WIN32
+        handle = CreateFileW(filePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+            nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (handle != INVALID_HANDLE_VALUE)
+        {
+            OVERLAPPED region{};
+            locked = LockFileEx(handle, LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, &region) != 0;
+        }
+#else
+        descriptor = open(filePath.c_str(), O_CREAT | O_RDWR, 0600);
+        if (descriptor >= 0) { locked = flock(descriptor, LOCK_EX) == 0; }
+#endif
+    }
+
+    ~SaveLock()
+    {
+#ifdef _WIN32
+        if (locked)
+        {
+            OVERLAPPED region{};
+            UnlockFileEx(handle, 0, 1, 0, &region);
+        }
+        if (handle != INVALID_HANDLE_VALUE) { CloseHandle(handle); }
+#else
+        if (descriptor >= 0) { close(descriptor); }
+#endif
+    }
+
+    SaveLock(const SaveLock&) = delete;
+    SaveLock& operator=(const SaveLock&) = delete;
+    bool isLocked() const { return locked; }
+
+private:
+    bool locked = false;
+#ifdef _WIN32
+    HANDLE handle = INVALID_HANDLE_VALUE;
+#else
+    int descriptor = -1;
+#endif
+};
+}
+
+bool withSaveLock(const std::filesystem::path& filePath, const std::function<bool()>& edit)
+{
+    if (!ensureSaveDirectory(filePath)) { return false; }
+    SaveLock lock(filePath);
+    return lock.isLocked() && edit();
+}
+
+bool isValidSaveKey(const std::string& levelKey)
 {
     if (levelKey.empty() || levelKey.size() > 128)
     {
@@ -44,15 +102,15 @@ bool isValidKey(const std::string& levelKey)
     return true;
 }
 
-bool isValidPath(const std::string& filePath)
+bool isValidSavePath(const std::string& filePath)
 {
     return !filePath.empty() && filePath.find(static_cast<char>(0)) == std::string::npos;
 }
 
-bool loadRecords(const std::filesystem::path& filePath, std::map<std::string, double>& records)
+bool readSaveContents(const std::filesystem::path& filePath, std::uintmax_t maximumSize, std::string& contents, bool& fileExists)
 {
     std::error_code fileError;
-    bool fileExists = std::filesystem::exists(filePath, fileError);
+    fileExists = std::filesystem::exists(filePath, fileError);
     if (fileError)
     {
         return false;
@@ -66,7 +124,7 @@ bool loadRecords(const std::filesystem::path& filePath, std::map<std::string, do
         return false;
     }
     std::uintmax_t fileSize = std::filesystem::file_size(filePath, fileError);
-    if (fileError || fileSize > 1024 * 1024)
+    if (fileError || fileSize > maximumSize)
     {
         return false;
     }
@@ -76,53 +134,25 @@ bool loadRecords(const std::filesystem::path& filePath, std::map<std::string, do
     {
         return false;
     }
-    std::string contents(static_cast<std::size_t>(fileSize), static_cast<char>(0));
+    contents.resize(static_cast<std::size_t>(fileSize));
     input.read(contents.data(), static_cast<std::streamsize>(contents.size()));
     if (input.gcount() != static_cast<std::streamsize>(contents.size()) || input.bad())
     {
         return false;
     }
     // Refuse a changing file rather than reading beyond the bounded snapshot.
-    if (input.peek() != std::char_traits<char>::eof() || input.bad())
-    {
-        return false;
-    }
-
-    std::istringstream lines(contents);
-    std::string line;
-    while (std::getline(lines, line))
-    {
-        if (line.size() > 512)
-        {
-            continue;
-        }
-        std::istringstream row(line);
-        row.imbue(std::locale::classic());
-        std::string levelKey;
-        std::string extraToken;
-        double seconds = -1.0;
-        if (!(row >> levelKey >> seconds) || (row >> extraToken) || !isValidKey(levelKey) || !std::isfinite(seconds) || seconds < 0.0)
-        {
-            continue;
-        }
-        auto recordPosition = records.find(levelKey);
-        if (recordPosition == records.end())
-        {
-            if (records.size() >= 4096)
-            {
-                return false;
-            }
-            records.emplace(levelKey, seconds);
-        }
-        else if (seconds < recordPosition->second)
-        {
-            recordPosition->second = seconds;
-        }
-    }
-    return true;
+    return input.peek() == std::char_traits<char>::eof() && !input.bad();
 }
 
-bool replaceRecords(const std::filesystem::path& filePath, const std::string& contents)
+bool ensureSaveDirectory(const std::filesystem::path& filePath)
+{
+    std::error_code directoryError;
+    std::filesystem::path parentPath = filePath.parent_path();
+    if (!parentPath.empty()) { std::filesystem::create_directories(parentPath, directoryError); }
+    return !directoryError;
+}
+
+bool replaceSaveContents(const std::filesystem::path& filePath, const std::string& contents)
 {
     std::random_device randomSource;
     for (int index = 0; index < 16; index++)
@@ -191,11 +221,54 @@ bool replaceRecords(const std::filesystem::path& filePath, const std::string& co
     }
     return false;
 }
+
+namespace
+{
+bool loadRecords(const std::filesystem::path& filePath, std::map<std::string, double>& records)
+{
+    std::string contents;
+    bool fileExists = false;
+    if (!readSaveContents(filePath, 1024 * 1024, contents, fileExists)) { return false; }
+    if (!fileExists) { return true; }
+
+    std::istringstream lines(contents);
+    std::string line;
+    while (std::getline(lines, line))
+    {
+        if (line.size() > 512)
+        {
+            continue;
+        }
+        std::istringstream row(line);
+        row.imbue(std::locale::classic());
+        std::string levelKey;
+        std::string extraToken;
+        double seconds = -1.0;
+        if (!(row >> levelKey >> seconds) || (row >> extraToken) || !isValidSaveKey(levelKey) || !std::isfinite(seconds) || seconds < 0.0)
+        {
+            continue;
+        }
+        auto recordPosition = records.find(levelKey);
+        if (recordPosition == records.end())
+        {
+            if (records.size() >= 4096)
+            {
+                return false;
+            }
+            records.emplace(levelKey, seconds);
+        }
+        else if (seconds < recordPosition->second)
+        {
+            recordPosition->second = seconds;
+        }
+    }
+    return true;
+}
 }
 
 double readBestTime(const std::string& filePath, const std::string& levelKey)
 {
-    if (!isValidKey(levelKey) || !isValidPath(filePath))
+    if (!isValidSaveKey(levelKey) || !isValidSavePath(filePath))
     {
         return -1.0;
     }
@@ -221,52 +294,33 @@ double readBestTime(const std::string& filePath, const std::string& levelKey)
 
 bool writeBestTime(const std::string& filePath, const std::string& levelKey, double seconds)
 {
-    if (!isValidKey(levelKey) || !isValidPath(filePath) || !std::isfinite(seconds) || seconds < 0.0)
+    if (!isValidSaveKey(levelKey) || !isValidSavePath(filePath) || !std::isfinite(seconds) || seconds < 0.0)
     {
         return false;
     }
     try
     {
         std::filesystem::path targetPath(filePath);
-        std::map<std::string, double> records;
-        if (!loadRecords(targetPath, records))
+        return withSaveLock(targetPath, [&]
         {
-            return false;
-        }
-        auto recordPosition = records.find(levelKey);
-        if (recordPosition != records.end() && recordPosition->second <= seconds)
-        {
-            return true;
-        }
-        if (recordPosition == records.end() && records.size() >= 4096)
-        {
-            return false;
-        }
-        records[levelKey] = seconds;
-        std::ostringstream output;
-        output.imbue(std::locale::classic());
-        output << std::setprecision(std::numeric_limits<double>::max_digits10);
-        auto outputPosition = records.cbegin();
-        while (outputPosition != records.cend())
-        {
-            output << outputPosition->first << ' ' << outputPosition->second << std::endl;
-            outputPosition++;
-        }
-        if (!output)
-        {
-            return false;
-        }
-        std::error_code directoryError;
-        std::filesystem::path parentPath = targetPath.parent_path();
-        if (!parentPath.empty())
-        {
-            std::filesystem::create_directories(parentPath, directoryError);
-            if (directoryError)
+            std::map<std::string, double> records;
+            if (!loadRecords(targetPath, records)) { return false; }
+            auto recordPosition = records.find(levelKey);
+            if (recordPosition != records.end() && recordPosition->second <= seconds) { return true; }
+            if (recordPosition == records.end() && records.size() >= 4096) { return false; }
+
+            records[levelKey] = seconds;
+            std::ostringstream output;
+            output.imbue(std::locale::classic());
+            output << std::setprecision(std::numeric_limits<double>::max_digits10);
+            auto outputPosition = records.cbegin();
+            while (outputPosition != records.cend())
             {
-                return false;
+                output << outputPosition->first << ' ' << outputPosition->second << std::endl;
+                outputPosition++;
             }
-        }
-        return replaceRecords(targetPath, output.str());
+            return output && replaceSaveContents(targetPath, output.str());
+        });
     }
     catch (...)
     {

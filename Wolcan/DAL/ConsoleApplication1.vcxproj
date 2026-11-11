@@ -143,10 +143,13 @@
   <ItemGroup>
     <ClCompile Include="MazeLoader.cpp" />
     <ClCompile Include="SaveManager.cpp" />
+    <ClCompile Include="ProfileStore.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MazeLoader.h" />
     <ClInclude Include="SaveManager.h" />
+    <ClInclude Include="ProfileStore.h" />
+    <ClInclude Include="SaveFile.h" />
   </ItemGroup>
   <Import Project="..\ProjectSettings.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -59,6 +59,7 @@ MenuArt::MenuArt() : titleFont(GetFontDefault()), bodyFont(GetFontDefault())
 
 MenuArt::~MenuArt()
 {
+    if (previewTexture.id != 0) { UnloadTexture(previewTexture); }
     if (background.id != 0) { UnloadTexture(background); }
     if (ownsTitleFont) { UnloadFont(titleFont); }
     if (ownsBodyFont) { UnloadFont(bodyFont); }
@@ -131,7 +132,7 @@ void MenuArt::drawButton(Rectangle rectangle, int buttonIndex, const MenuVisualS
     }
 }
 
-void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize, Difficulty difficulty) const
+void MenuArt::drawBackdrop(const MenuLayout& layout, const MenuVisualState& visualState) const
 {
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
@@ -162,6 +163,15 @@ void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState,
         }
     }
 
+}
+
+void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize,
+    Difficulty difficulty, bool hasProfile) const
+{
+    drawBackdrop(layout, visualState);
+    float width = static_cast<float>(GetScreenWidth());
+    float height = static_cast<float>(GetScreenHeight());
+    float scale = layout.scale;
     float appearance = std::clamp(visualState.elapsed / 0.32f, 0.0f, 1.0f);
     appearance = 1.0f - (1.0f - appearance) * (1.0f - appearance);
     Color cream = {244, 221, 184, 255};
@@ -206,8 +216,8 @@ void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState,
         bool enabled = (buttonIndex != 0 || selectedSize > 10) && (buttonIndex != 1 || selectedSize < 50);
         drawButton(layout.buttons[buttonIndex], buttonIndex, visualState, scale, enabled, appearance);
     }
-    const int modeCount = 3;
-    const char* modeNames[modeCount] = {"1  EASY", "2  NORMAL", "3  HARD"};
+    const int modeCount = 4;
+    const char* modeNames[modeCount] = {"1 EASY", "2 NORMAL", "3 HARD", "4 EXTRA HARD"};
     for (int modeIndex = 0; modeIndex < modeCount; modeIndex++)
     {
         int buttonIndex = modeIndex + static_cast<int>(MenuAction::Easy);
@@ -220,11 +230,21 @@ void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState,
         DrawRectangleRec({button.x + scale, button.y + scale, button.width - 2.0f * scale, button.height - 2.0f * scale},
             menuOpacity(fill, appearance));
         drawCentered(bodyFont, modeNames[modeIndex], button.x + button.width * 0.5f,
-            button.y + 6.0f * scale, 18.0f * scale, 0.3f * scale,
+            button.y + 7.0f * scale, 16.0f * scale, 0.2f * scale,
             menuOpacity(selected ? Color{33, 18, 11, 255} : cream, appearance));
     }
+    if (hasProfile)
+    {
+        int achievements = static_cast<int>(MenuAction::Achievements);
+        int character = static_cast<int>(MenuAction::Character);
+        drawProfileButton(layout.buttons[achievements], "A  ACHIEVEMENTS", scale,
+            visualState.hoverAmounts[achievements] > 0.25f, true);
+        drawProfileButton(layout.buttons[character], "C  CHARACTER CUSTOMIZATION", scale,
+            visualState.hoverAmounts[character] > 0.25f, true);
+    }
     drawCentered(bodyFont, "ARROWS: SIZE     ENTER: PLAY     ESC: QUIT", layout.centerX,
-        layout.top + 580.0f * scale, 16.0f * scale, 0.7f * scale, menuOpacity(muted, appearance * 0.9f));
+        layout.top + (hasProfile ? 631.0f : 580.0f) * scale, 16.0f * scale, 0.7f * scale,
+        menuOpacity(muted, appearance * 0.9f));
 
     float footerSize = std::clamp(18.0f * scale, 18.0f, 24.0f);
     float footerTop = height - footerSize - 14.0f;
@@ -232,4 +252,140 @@ void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState,
     const char* islandLabel = "VOLCANIC ISLE / 01";
     Vector2 labelSize = MeasureTextEx(bodyFont, islandLabel, footerSize - 1.0f, 1.0f);
     DrawTextEx(bodyFont, islandLabel, {width - labelSize.x - 24.0f, footerTop}, footerSize - 1.0f, 1.0f, {235, 211, 181, 140});
+}
+
+void MenuArt::drawProfileButton(Rectangle button, const char* label, float scale, bool hovered, bool enabled) const
+{
+    Color edge = hovered && enabled ? Color{228, 147, 68, 255} : Color{116, 69, 48, 255};
+    Color fill = hovered && enabled ? Color{102, 53, 32, 255} : Color{52, 29, 21, 255};
+    Color text = enabled ? Color{245, 218, 183, 255} : Color{150, 123, 108, 255};
+    DrawRectangleRec(button, edge);
+    DrawRectangleRec({button.x + scale, button.y + scale, button.width - 2.0f * scale,
+        button.height - 2.0f * scale}, fill);
+    float fontSize = 18.0f * scale;
+    float textWidth = MeasureTextEx(bodyFont, label, fontSize, 0.2f * scale).x;
+    if (textWidth > button.width - 10.0f * scale) { fontSize *= (button.width - 10.0f * scale) / textWidth; }
+    drawCentered(bodyFont, label, button.x + button.width * 0.5f,
+        button.y + (button.height - fontSize) * 0.5f, fontSize, 0.2f * scale, text);
+}
+
+void MenuArt::drawProfile(const MenuLayout& layout, const ProfileLayout& profileLayout,
+    const MenuVisualState& visualState, const Progression& progression, MenuAction page, Skin preview,
+    float previewTime, int hoveredButton)
+{
+    drawBackdrop(layout, visualState);
+    Rectangle panel = profileLayout.panel;
+    float scale = layout.scale;
+    Color gold = {255, 190, 103, 255};
+    Color cream = {245, 224, 197, 255};
+    Color muted = {180, 153, 135, 255};
+    auto rectangle = [&](float x, float y, float width, float height, Color color)
+    {
+        DrawRectangleRec({panel.x + x * scale, panel.y + y * scale, width * scale, height * scale}, color);
+    };
+    auto label = [&](const char* text, float x, float y, float size, Color color, float limit)
+    {
+        float fontSize = size * scale;
+        float width = MeasureTextEx(bodyFont, text, fontSize, 0).x;
+        if (width > limit * scale) { fontSize *= limit * scale / width; }
+        DrawTextEx(bodyFont, text, {panel.x + x * scale, panel.y + y * scale}, fontSize, 0, color);
+    };
+    rectangle(5, 7, 860, 590, {7, 4, 5, 180});
+    rectangle(0, 0, 860, 590, {129, 75, 48, 255});
+    rectangle(1, 1, 858, 588, {29, 19, 18, 248});
+    rectangle(28, 87, 804, 1, {124, 73, 49, 255});
+    bool customization = page == MenuAction::Character;
+    drawCentered(titleFont, customization ? "CHARACTER CUSTOMIZATION" : "ACHIEVEMENTS", layout.centerX,
+        panel.y + 26.0f * scale, 24.0f * scale, 1.0f * scale, gold);
+
+    if (!customization)
+    {
+        int count = progression.getAchievementCount();
+        int unlockedCount = 0;
+        for (int index = 0; index < count; index++)
+        {
+            AchievementInfo achievement = progression.getAchievement(index);
+            if (achievement.unlocked) { unlockedCount++; }
+            float x = 28.0f + static_cast<float>(index % 2) * 406.0f;
+            float y = 103.0f + static_cast<float>(index / 2) * 68.0f;
+            Color accent = achievement.unlocked ? gold : Color{134, 106, 96, 255};
+            rectangle(x, y, 398, 62, {51, 34, 30, 255});
+            rectangle(x, y, 2, 62, accent);
+            rectangle(x + 14, y + 18, 19, 13, accent);
+            rectangle(x + 18, y + 31, 11, 7, accent);
+            rectangle(x + 21, y + 38, 5, 6, accent);
+            rectangle(x + 17, y + 44, 13, 3, accent);
+            label(achievement.name, x + 46, y + 7, 22, cream, 283);
+            label(achievement.description, x + 46, y + 34, 17, muted, 340);
+            const char* progressText = achievement.unlocked ? "DONE" : TextFormat("%i / %i", achievement.progress, achievement.target);
+            label(progressText, x + 332, y + 10, 17, accent, 59);
+        }
+        int collectibles = progression.getCollectibleCount();
+        drawCentered(bodyFont, TextFormat("%i / %i UNLOCKED   |   %i %s", unlockedCount, count, collectibles,
+            collectibles == 1 ? "ARTIFACT" : "ARTIFACTS"), layout.centerX, panel.y + 57.0f * scale,
+            21.0f * scale, 0.8f * scale, muted);
+    }
+    else
+    {
+        int skinCount = static_cast<int>(Skin::CrimsonGuardian) + 1;
+        for (int index = 0; index < skinCount; index++)
+        {
+            Skin skin = static_cast<Skin>(index);
+            SkinInfo information = skinInfo(skin);
+            float y = 106.0f + static_cast<float>(index) * 63.0f;
+            bool previewed = preview == skin;
+            rectangle(28, y, 420, 56, previewed ? Color{91, 49, 34, 255} : Color{50, 33, 29, 255});
+            if (previewed) { rectangle(28, y, 3, 56, gold); }
+            label(information.name, 43, y + 5, 23, cream, 273);
+            label(information.requirement, 43, y + 31, 17, muted, 389);
+            const char* status = skin == progression.getSelectedSkin() ? "EQUIPPED" :
+                progression.isSkinUnlocked(skin) ? "AVAILABLE" : "LOCKED";
+            label(status, 345, y + 8, 17, previewed ? gold : muted, 91);
+        }
+        bool unlocked = progression.isSkinUnlocked(preview);
+        SkinInfo information = skinInfo(preview);
+        rectangle(473, 106, 358, 244, {43, 27, 28, 255});
+        rectangle(489, 122, 326, 212, {34, 23, 25, 255});
+        rectangle(564, 275, 176, 5, {95, 52, 38, 255});
+        rectangle(580, 280, 144, 8, {61, 35, 29, 255});
+        if (!previewLoaded || loadedPreview != preview)
+        {
+            if (previewTexture.id != 0) { UnloadTexture(previewTexture); }
+            previewTexture = {};
+            loadedPreview = preview;
+            previewLoaded = true;
+            std::string path = std::string(GetApplicationDirectory()) + "assets/characters/" + skinAssetName(preview) + ".png";
+            if (FileExists(path.c_str()))
+            {
+                previewTexture = LoadTexture(path.c_str());
+                if (previewTexture.id != 0) { SetTextureFilter(previewTexture, TEXTURE_FILTER_POINT); }
+            }
+        }
+        if (previewTexture.id != 0 && previewTexture.width == 48 && previewTexture.height == 64)
+        {
+            float fraction = std::clamp(previewTime / 0.23f, 0.0f, 1.0f);
+            float size = 16.0f * std::max(1.0f, std::floor(8.0f * scale));
+            int frame = static_cast<int>(previewTime * 5.0f) % 4;
+            if (frame == 3) { frame = 0; }
+            float direction = std::fmod(std::floor(previewTime / 1.5f) + 1.0f, 4.0f);
+            DrawTexturePro(previewTexture, {16.0f * static_cast<float>(frame), 16.0f * direction, 16, 16},
+                {std::round(panel.x + (652.0f + (1.0f - fraction) * 18.0f) * scale - size * 0.5f),
+                    std::round(panel.y + 281.0f * scale - size), size, size},
+                {0, 0}, 0, menuOpacity({255, 255, 255, 255}, fraction));
+        }
+        drawCentered(bodyFont, information.name, panel.x + 652.0f * scale, panel.y + 302.0f * scale,
+            27.0f * scale, 0.4f * scale, gold);
+        const char* labels[3] = {"<", ">", unlocked ? "EQUIP SKIN" : "LOCKED"};
+        for (int index = 0; index < 3; index++)
+        {
+            int buttonIndex = index + static_cast<int>(ProfileAction::Previous);
+            drawProfileButton(profileLayout.buttons[buttonIndex], labels[index], scale,
+                hoveredButton == buttonIndex, index != 2 || unlocked);
+        }
+        label("LEFT / RIGHT  Browse     ENTER  Equip", 490, 421, 19, muted, 332);
+    }
+
+    int backButton = static_cast<int>(ProfileAction::Back);
+    drawProfileButton(profileLayout.buttons[backButton], "ESC  BACK", scale, hoveredButton == backButton, true);
+    if (!progression.wasSaved()) { label("PROFILE COULD NOT BE SAVED", 174, 543, 18, gold, 470); }
 }

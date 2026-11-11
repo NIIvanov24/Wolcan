@@ -74,7 +74,7 @@ Maze::Maze(int rowCount, int columnCount, Difficulty difficulty, std::uint32_t s
     : rowCount(rowCount), columnCount(columnCount), mazeCells(nullptr), difficulty(difficulty), seed(seed)
 {
     if (rowCount < 10 || rowCount > 50 || columnCount < 10 || columnCount > 50
-        || static_cast<int>(difficulty) < 0 || static_cast<int>(difficulty) > 2)
+        || static_cast<int>(difficulty) < 0 || static_cast<int>(difficulty) > static_cast<int>(Difficulty::ExtraHard))
     {
         throw std::invalid_argument("Maze dimensions must be 10..50 and difficulty must be valid.");
     }
@@ -133,6 +133,18 @@ bool Maze::visitCell(int row, int column)
     if (mazeCells[row][column] == '?') { mazeCells[row][column] = '+'; return true; }
     if (mazeCells[row][column] == '.') { mazeCells[row][column] = ','; }
     return false;
+}
+
+void Maze::resetVisits()
+{
+    for (int row = 0; row < rowCount; row++)
+    {
+        for (int column = 0; column < columnCount; column++)
+        {
+            if (mazeCells[row][column] == ',') { mazeCells[row][column] = '.'; }
+            else if (mazeCells[row][column] == '+') { mazeCells[row][column] = '?'; }
+        }
+    }
 }
 
 void Maze::generate(std::uint32_t newSeed)
@@ -203,6 +215,7 @@ void Maze::generate(std::uint32_t newSeed)
         mazeCells[wall.row][wall.column] = '?';
     }
     int loopTarget = difficulty == Difficulty::Easy ? nodeCount / 5 : difficulty == Difficulty::Normal ? nodeCount / 12 : nodeCount / 80;
+    if (difficulty == Difficulty::ExtraHard) { loopTarget = std::max(1, loopTarget); }
     int openedLoops = 0;
     for (int wallIndex = 0; wallIndex < static_cast<int>(walls.size()); wallIndex++)
     {
@@ -219,7 +232,8 @@ void Maze::generate(std::uint32_t newSeed)
         for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
         {
             if (rowIndex % 2 == 0 || columnIndex % 2 == 0 || rowIndex > lastRow || columnIndex > lastColumn
-                || difficulty == Difficulty::Hard || !ordinaryPassage(*this, rowIndex, columnIndex)) { continue; }
+                || difficulty == Difficulty::Hard || difficulty == Difficulty::ExtraHard
+                || !ordinaryPassage(*this, rowIndex, columnIndex)) { continue; }
             int neighborCount = 0;
             GridPosition candidates[4] = {};
             int candidateCount = 0;
@@ -273,8 +287,11 @@ void Maze::generate(std::uint32_t newSeed)
         : GridPosition{orientation == 2 ? rowCount - 1 : 0, exitInterior.column};
     openGateway(exitInterior, exitPosition);
 
+    // Extra Hard uses dynamic hazards instead of boulders that could erase a bypass.
+    int obstacleTarget = difficulty == Difficulty::Easy || difficulty == Difficulty::ExtraHard
+        ? 0 : difficulty == Difficulty::Normal ? 1 : 3;
+    if (obstacleTarget == 0) { return; }
     // Add boulders only when the ordinary passage graph stays fully connected.
-    int obstacleTarget = difficulty == Difficulty::Easy ? 0 : difficulty == Difficulty::Normal ? 1 : 3;
     int obstacles = 0;
     std::vector<GridPosition> floors;
     for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)

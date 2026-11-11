@@ -143,12 +143,14 @@
     <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="Maze.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Progression.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Maze.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="GameTypes.h" />
+    <ClInclude Include="Progression.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DAL\ConsoleApplication1.vcxproj">

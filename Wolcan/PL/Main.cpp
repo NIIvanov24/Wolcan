@@ -5,6 +5,7 @@
 #include <exception>
 #include <iostream>
 #include <cstdlib>
+#include <filesystem>
 #include <memory>
 #include <charconv>
 #include <stdexcept>
@@ -74,17 +75,19 @@ int main(int argumentCount, char* arguments[])
     {
         std::uint32_t seed = requestedSeed(argumentCount, arguments);
         std::string recordFile = recordStoragePath();
+        std::string profileFile = (std::filesystem::path(recordFile).parent_path() / "profile.txt").string();
+        Progression progression(profileFile);
         while (!WindowShouldClose())
         {
             Difficulty difficulty = Difficulty::Normal;
-            int selectedSize = runMainMenu(&difficulty);
+            int selectedSize = runMainMenu(&difficulty, &progression);
             if (selectedSize == 0 || WindowShouldClose())
             {
                 break;
             }
 
             GameLogic game(selectedSize, selectedSize, difficulty, seed, recordFile);
-            runGame(game);
+            runGame(game, &progression);
         }
     }
     catch (const std::exception& error)

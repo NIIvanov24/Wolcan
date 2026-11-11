@@ -24,6 +24,7 @@
     <ClCompile Include="GameLogic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Progression.cpp"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Maze.h">
@@ -38,5 +39,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameTypes.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="Progression.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

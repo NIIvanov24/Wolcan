@@ -21,6 +21,7 @@
     <ClCompile Include="SaveManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ProfileStore.cpp"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MazeLoader.h">
@@ -29,5 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SaveManager.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="ProfileStore.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="SaveFile.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>
