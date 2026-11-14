@@ -3,7 +3,7 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="BLL/BLL.vcxproj" />
-  <Project Path="DAL/ConsoleApplication1.vcxproj" />
-  <Project Path="PL/Wolcan.vcxproj" />
+  <Project Path="BLL/BLL.vcxproj" Id="e78fcffc-b338-4faf-bf89-203e351a9063" />
+  <Project Path="DAL/ConsoleApplication1.vcxproj" Id="5515e5d3-4ffe-4c14-98dd-6e578c6a70fd" />
+  <Project Path="PL/Wolcan.vcxproj" Id="33ec4133-5c8c-4771-bbd6-9f561679c70c" />
 </Solution>

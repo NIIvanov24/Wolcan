@@ -15,7 +15,9 @@
 #include <string>
 #include <system_error>
 
-#ifdef _WIN32
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#elif defined(_WIN32)
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -28,6 +30,45 @@
 
 namespace
 {
+#if defined(__EMSCRIPTEN__)
+EM_ASYNC_JS(int, acquireWebSaveLock, (const char* path), {
+    if (!navigator.locks) return 1;
+    const key = "wolcan:" + UTF8ToString(path);
+    return await new Promise((ready) => {
+        navigator.locks.request(key, () => new Promise((release) => {
+            if (!Module.wolcanSaveLocks) Module.wolcanSaveLocks = new Map();
+            Module.wolcanSaveLocks.set(key, release);
+            ready(1);
+        })).catch(() => ready(0));
+    });
+});
+
+class SaveLock
+{
+public:
+    explicit SaveLock(const std::filesystem::path& filePath) : path(filePath.string()),
+        locked(acquireWebSaveLock(path.c_str()) != 0) {}
+
+    ~SaveLock()
+    {
+        if (!locked) { return; }
+        EM_ASM({
+            const key = "wolcan:" + UTF8ToString($0);
+            const release = Module.wolcanSaveLocks?.get(key);
+            Module.wolcanSaveLocks?.delete(key);
+            if (release) release();
+        }, path.c_str());
+    }
+
+    SaveLock(const SaveLock&) = delete;
+    SaveLock& operator=(const SaveLock&) = delete;
+    bool isLocked() const { return locked; }
+
+private:
+    std::string path;
+    bool locked;
+};
+#else
 class SaveLock
 {
 public:
@@ -75,11 +116,14 @@ private:
     int descriptor = -1;
 #endif
 };
+#endif
 }
 
 bool withSaveLock(const std::filesystem::path& filePath, const std::function<bool()>& edit)
 {
+#if !defined(__EMSCRIPTEN__)
     if (!ensureSaveDirectory(filePath)) { return false; }
+#endif
     SaveLock lock(filePath);
     return lock.isLocked() && edit();
 }
@@ -109,6 +153,29 @@ bool isValidSavePath(const std::string& filePath)
 
 bool readSaveContents(const std::filesystem::path& filePath, std::uintmax_t maximumSize, std::string& contents, bool& fileExists)
 {
+#if defined(__EMSCRIPTEN__)
+    std::string path = filePath.string();
+    int size = EM_ASM_INT({
+        try {
+            const value = localStorage.getItem("wolcan:" + UTF8ToString($0));
+            return value === null ? -1 : lengthBytesUTF8(value);
+        } catch (error) { return -2; }
+    }, path.c_str());
+    fileExists = size >= 0;
+    if (size < 0) { return size == -1; }
+    if (static_cast<std::uintmax_t>(size) > maximumSize) { return false; }
+    contents.resize(static_cast<std::size_t>(size) + 1);
+    int copied = EM_ASM_INT({
+        try {
+            const value = localStorage.getItem("wolcan:" + UTF8ToString($0));
+            if (value === null || lengthBytesUTF8(value) !== $2) return 0;
+            stringToUTF8(value, $1, $2 + 1);
+            return 1;
+        } catch (error) { return 0; }
+    }, path.c_str(), contents.data(), size);
+    contents.resize(static_cast<std::size_t>(size));
+    return copied != 0;
+#else
     std::error_code fileError;
     fileExists = std::filesystem::exists(filePath, fileError);
     if (fileError)
@@ -142,6 +209,7 @@ bool readSaveContents(const std::filesystem::path& filePath, std::uintmax_t maxi
     }
     // Refuse a changing file rather than reading beyond the bounded snapshot.
     return input.peek() == std::char_traits<char>::eof() && !input.bad();
+#endif
 }
 
 bool ensureSaveDirectory(const std::filesystem::path& filePath)
@@ -154,6 +222,15 @@ bool ensureSaveDirectory(const std::filesystem::path& filePath)
 
 bool replaceSaveContents(const std::filesystem::path& filePath, const std::string& contents)
 {
+#if defined(__EMSCRIPTEN__)
+    std::string path = filePath.string();
+    return EM_ASM_INT({
+        try {
+            localStorage.setItem("wolcan:" + UTF8ToString($0), UTF8ToString($1));
+            return 1;
+        } catch (error) { return 0; }
+    }, path.c_str(), contents.c_str()) != 0;
+#else
     std::random_device randomSource;
     for (int index = 0; index < 16; index++)
     {
@@ -220,6 +297,7 @@ bool replaceSaveContents(const std::filesystem::path& filePath, const std::strin
 #endif
     }
     return false;
+#endif
 }
 
 namespace

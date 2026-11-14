@@ -20,6 +20,13 @@ int gridDistance(GridPosition first, GridPosition second)
     return std::abs(first.row - second.row) + std::abs(first.column - second.column);
 }
 
+bool isAdjacentOffset(int rowOffset, int columnOffset)
+{
+    bool vertical = (rowOffset == -1 || rowOffset == 1) && columnOffset == 0;
+    bool horizontal = rowOffset == 0 && (columnOffset == -1 || columnOffset == 1);
+    return vertical || horizontal;
+}
+
 std::uint32_t mixSpikeCycle(std::uint32_t value)
 {
     // Integer mixing gives each spike an independent, repeatable interval per cycle.
@@ -53,9 +60,7 @@ GameLogic::GameLogic(int rowCount, int columnCount, Difficulty difficulty, std::
 
 bool GameLogic::tryMovePlayer(int rowOffset, int columnOffset)
 {
-    bool vertical = (rowOffset == -1 || rowOffset == 1) && columnOffset == 0;
-    bool horizontal = rowOffset == 0 && (columnOffset == -1 || columnOffset == 1);
-    if (hasWon() || paused || isDying() || (!vertical && !horizontal)) { return false; }
+    if (hasWon() || paused || isDying() || !isAdjacentOffset(rowOffset, columnOffset)) { return false; }
     int row = player.getRow() + rowOffset;
     int column = player.getColumn() + columnOffset;
     if (!maze.isWalkable(row, column)) { return false; }
@@ -72,7 +77,7 @@ bool GameLogic::tryMovePlayer(int rowOffset, int columnOffset)
     }
     if (tile.feature.hazard == HazardKind::Fragile && tile.collapseAt < 0.0)
     {
-        tile.collapseAt = elapsedSeconds + fragileWarningSeconds;
+        triggerCollapse({row, column});
     }
     if (leftLava && !isInLava())
     {
@@ -80,7 +85,7 @@ bool GameLogic::tryMovePlayer(int rowOffset, int columnOffset)
         regenerationTime = 0.0;
     }
     if (tile.feature.hazard == HazardKind::Spikes) { trySpikeHit(tile, getSpikeTiming(tile)); }
-    if (hasWon())
+    if (hasWon() && !assisted)
     {
         bestSeconds = bestSeconds < 0.0 ? elapsedSeconds : std::min(bestSeconds, elapsedSeconds);
         if (!recordFile.empty())
@@ -94,6 +99,36 @@ bool GameLogic::tryMovePlayer(int rowOffset, int columnOffset)
             }
         }
     }
+    return true;
+}
+
+bool GameLogic::grantHammer()
+{
+    if (hammerGranted || paused || isDying() || hasWon()) { return false; }
+    hammerGranted = true;
+    hammerUses = 10;
+    return true;
+}
+
+int GameLogic::getHammerUses() const { return hammerUses; }
+bool GameLogic::isAssisted() const { return assisted; }
+
+bool GameLogic::canBreakWall(int row, int column) const
+{
+    return hammerUses > 0 && !paused && !isDying() && !hasWon()
+        && row > 0 && row < maze.getRowCount() - 1 && column > 0 && column < maze.getColumnCount() - 1
+        && isAdjacentOffset(row - player.getRow(), column - player.getColumn())
+        && maze.getCell(row, column) == '#' && !tiles[row][column].spikeAnchor;
+}
+
+bool GameLogic::tryBreakWall(int rowOffset, int columnOffset)
+{
+    if (!isAdjacentOffset(rowOffset, columnOffset)) { return false; }
+    int row = player.getRow() + rowOffset;
+    int column = player.getColumn() + columnOffset;
+    if (!canBreakWall(row, column) || !maze.breakWall(row, column)) { return false; }
+    hammerUses--;
+    assisted = true;
     return true;
 }
 
@@ -183,6 +218,13 @@ void GameLogic::placeHazards(std::mt19937& generator, const CellGrid<int>& ordin
         }
     }
     std::shuffle(candidates.begin(), candidates.end(), generator);
+    CellGrid<bool> eligible = makeGrid(false);
+    int candidateCount = static_cast<int>(candidates.size());
+    for (int index = 0; index < candidateCount; index++)
+    {
+        GridPosition cell = candidates[index];
+        eligible[cell.row][cell.column] = true;
+    }
     int hazardTarget = 1 + rows * columns / 165;
     int fragileCount = 0;
     int spikeCount = 0;
@@ -190,7 +232,7 @@ void GameLogic::placeHazards(std::mt19937& generator, const CellGrid<int>& ordin
     {
         if (fragileCount >= hazardTarget && spikeCount >= hazardTarget) { break; }
         GridPosition cell = candidates[candidateIndex];
-        if (reserved[cell.row][cell.column]) { continue; }
+        if (reserved[cell.row][cell.column] || tiles[cell.row][cell.column].feature.hazard != HazardKind::None) { continue; }
         auto neighbors = neighborsOf(cell);
         GridPosition walls[4] = {};
         int wallCount = 0;
@@ -216,15 +258,75 @@ void GameLogic::placeHazards(std::mt19937& generator, const CellGrid<int>& ordin
             tile.feature.wallColumnOffset = wall.column - cell.column;
             tile.spikeSeed = static_cast<std::uint32_t>(generator());
             tile.spikeOffset = std::uniform_real_distribution<double>(0.0, 2.5)(generator);
+            tiles[wall.row][wall.column].spikeAnchor = true;
             spikeCount++;
         }
         else if (fragileCount < hazardTarget)
         {
-            tile.feature.hazard = HazardKind::Fragile;
+            reserved[escape.row][escape.column] = true;
+            placeFragileTrap(generator, cell, fragileCount + 1, eligible, reserved);
             fragileCount++;
         }
         else { continue; }
         reserved[escape.row][escape.column] = true;
+    }
+}
+
+void GameLogic::placeFragileTrap(std::mt19937& generator, GridPosition cell, int group,
+    const CellGrid<bool>& eligible, const CellGrid<bool>& reserved)
+{
+    // Grow a connected group away from its reserved dry escape.
+    std::vector<GridPosition> members = {cell};
+    tiles[cell.row][cell.column].collapseGroup = group;
+    tiles[cell.row][cell.column].feature.hazard = HazardKind::Fragile;
+    int target = std::uniform_int_distribution<int>(2, 4)(generator);
+    for (int index = 0; index < target - 1; index++)
+    {
+        std::vector<GridPosition> frontier;
+        int memberCount = static_cast<int>(members.size());
+        for (int member = 0; member < memberCount; member++)
+        {
+            auto neighbors = neighborsOf(members[member]);
+            const int directionCount = 4;
+            for (int direction = 0; direction < directionCount; direction++)
+            {
+                GridPosition next = neighbors[direction];
+                if (maze.isInside(next.row, next.column) && eligible[next.row][next.column]
+                    && !reserved[next.row][next.column] && tiles[next.row][next.column].feature.hazard == HazardKind::None)
+                {
+                    frontier.push_back(next);
+                }
+            }
+        }
+        if (frontier.empty()) { break; }
+        int last = static_cast<int>(frontier.size()) - 1;
+        GridPosition next = frontier[std::uniform_int_distribution<int>(0, last)(generator)];
+        tiles[next.row][next.column].collapseGroup = group;
+        tiles[next.row][next.column].feature.hazard = HazardKind::Fragile;
+        members.push_back(next);
+    }
+}
+
+void GameLogic::triggerCollapse(GridPosition cell)
+{
+    TileState& entry = tiles[cell.row][cell.column];
+    int group = entry.collapseGroup;
+    entry.collapseAt = elapsedSeconds + fragileWarningSeconds;
+    std::vector<GridPosition> queue = {cell};
+    for (int index = 0; index < static_cast<int>(queue.size()); index++)
+    {
+        GridPosition current = queue[index];
+        auto neighbors = neighborsOf(current);
+        const int count = 4;
+        for (int direction = 0; direction < count; direction++)
+        {
+            GridPosition next = neighbors[direction];
+            if (!maze.isInside(next.row, next.column)) { continue; }
+            TileState& tile = tiles[next.row][next.column];
+            if (tile.collapseGroup != group || tile.collapseAt >= 0.0) { continue; }
+            tile.collapseAt = tiles[current.row][current.column].collapseAt + collapseSpreadSeconds;
+            queue.push_back(next);
+        }
     }
 }
 
@@ -268,6 +370,7 @@ void GameLogic::generateFeatures()
 
 void GameLogic::resetState(bool respawn)
 {
+    assisted = false;
     GridPosition start = maze.getStart();
     player.setPosition(start.row, start.column);
     maze.visitCell(start.row, start.column);
@@ -292,7 +395,11 @@ void GameLogic::resetState(bool respawn)
 
 void GameLogic::restart(bool repeatSameMaze)
 {
-    if (repeatSameMaze) { maze.resetVisits(); }
+    if (repeatSameMaze)
+    {
+        if (assisted) { maze.generate(maze.getSeed()); }
+        else { maze.resetVisits(); }
+    }
     else
     {
         maze.generate(nextMazeSeed(maze.getSeed()));
@@ -344,9 +451,9 @@ CellFeature GameLogic::getCellFeature(int row, int column) const
         {
             feature.hazard = HazardKind::Lava;
             feature.phase = HazardPhase::Active;
-            feature.phaseProgress = 1.0f;
+            feature.phaseProgress = static_cast<float>(std::clamp((elapsedSeconds - tile.collapseAt) / 0.28, 0.0, 1.0));
         }
-        else
+        else if (elapsedSeconds >= tile.collapseAt - fragileWarningSeconds - 0.000000001)
         {
             feature.phase = HazardPhase::Warning;
             feature.phaseProgress = static_cast<float>(std::clamp(1.0 - (tile.collapseAt - elapsedSeconds) / fragileWarningSeconds,
@@ -406,7 +513,7 @@ void GameLogic::advanceContact(double until)
         }
         if (elapsedSeconds >= until) { return; }
         double exposureAt = std::max(elapsedSeconds, respawnProtectionUntil);
-        double fatalAt = exposureAt + health / 4.0;
+        double fatalAt = exposureAt + health / lavaDamagePerSecond;
         regenerationTime = 0.0;
         if (fatalAt <= until + 0.000000001)
         {
@@ -415,7 +522,7 @@ void GameLogic::advanceContact(double until)
         }
         else
         {
-            takeDamage(std::max(0.0, until - exposureAt) * 4.0);
+            takeDamage(std::max(0.0, until - exposureAt) * lavaDamagePerSecond);
             elapsedSeconds = until;
         }
         return;
@@ -465,7 +572,8 @@ void GameLogic::updateTime(double seconds)
         deathTime += seconds;
         return;
     }
-    maze.resetVisits();
+    if (assisted) { maze.generate(maze.getSeed()); }
+    else { maze.resetVisits(); }
     resetState(true);
     elapsedSeconds = std::max(0.0, seconds - remainingDeathTime);
 }
@@ -500,6 +608,7 @@ bool GameLogic::isInLava() const
 std::string GameLogic::getRecordKey() const
 {
     // A seed identifies one exact level; scores from different maps are not mixed.
-    return "maze-v2-" + std::to_string(maze.getRowCount()) + "x" + std::to_string(maze.getColumnCount())
+    std::string version = maze.getDifficulty() == Difficulty::ExtraHard ? "maze-v3-" : "maze-v2-";
+    return version + std::to_string(maze.getRowCount()) + "x" + std::to_string(maze.getColumnCount())
         + "-" + std::to_string(static_cast<int>(maze.getDifficulty())) + "-" + std::to_string(maze.getSeed());
 }

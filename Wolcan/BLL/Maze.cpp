@@ -135,6 +135,14 @@ bool Maze::visitCell(int row, int column)
     return false;
 }
 
+bool Maze::breakWall(int row, int column)
+{
+    if (row <= 0 || row >= rowCount - 1 || column <= 0 || column >= columnCount - 1
+        || mazeCells[row][column] != '#') { return false; }
+    mazeCells[row][column] = '!';
+    return true;
+}
+
 void Maze::resetVisits()
 {
     for (int row = 0; row < rowCount; row++)
@@ -143,6 +151,7 @@ void Maze::resetVisits()
         {
             if (mazeCells[row][column] == ',') { mazeCells[row][column] = '.'; }
             else if (mazeCells[row][column] == '+') { mazeCells[row][column] = '?'; }
+            else if (mazeCells[row][column] == '!') { mazeCells[row][column] = '#'; }
         }
     }
 }

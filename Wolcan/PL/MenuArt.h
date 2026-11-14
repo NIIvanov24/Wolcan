@@ -3,6 +3,8 @@
 #include "MenuLayout.h"
 #include "Progression.h"
 
+class GameSettings;
+
 struct MenuVisualState
 {
     float elapsed = 0.0f;
@@ -19,9 +21,12 @@ public:
     MenuArt& operator=(const MenuArt& other) = delete;
 
     void draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize,
-        Difficulty difficulty = Difficulty::Normal, bool hasProfile = false) const;
+        Difficulty difficulty = Difficulty::Normal, bool hasProfile = false, const GameSettings* settings = nullptr) const;
     void drawProfile(const MenuLayout& layout, const ProfileLayout& profileLayout, const MenuVisualState& visualState,
         const Progression& progression, MenuAction page, Skin preview, float previewTime, int hoveredButton);
+    void drawOptions(const MenuLayout& layout, const MenuVisualState& visualState, const GameSettings& settings,
+        bool help, int editing, const char* message, Vector2 mouse) const;
+    Rectangle optionRectangle(const MenuLayout& layout, float x, float y, float width, float height) const;
 
 private:
     Texture2D background = {};

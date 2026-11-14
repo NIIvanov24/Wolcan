@@ -18,7 +18,9 @@ struct ProfileData
     int clears = 0;
     std::uint32_t achievements = 0;
     int selectedSkin = 0;
+    int hammerBreaks = 0;
     std::map<std::string, ProfileRank> ranks;
+    std::set<std::string> completedLevels;
     std::set<std::tuple<std::string, int, int>> collectibles;
 };
 

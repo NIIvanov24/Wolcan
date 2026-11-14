@@ -18,10 +18,16 @@ bool readEntry(const std::string& line, ProfileData& profile)
     row.imbue(std::locale::classic());
     std::string kind;
     std::string levelKey;
+    if (!(row >> kind >> levelKey) || !isValidSaveKey(levelKey)) { return false; }
+    if (kind == "clear")
+    {
+        std::string extra;
+        return !(row >> extra) && profile.completedLevels.insert(levelKey).second;
+    }
     int first = -1;
     int second = -1;
     std::string extra;
-    if (!(row >> kind >> levelKey >> first >> second) || (row >> extra) || !isValidSaveKey(levelKey)) { return false; }
+    if (!(row >> first >> second) || (row >> extra)) { return false; }
     if (kind == "item" && first >= 0 && second >= 0)
     {
         return profile.collectibles.emplace(levelKey, first, second).second;
@@ -47,22 +53,33 @@ bool loadProfile(const std::filesystem::path& filePath, ProfileData& profile)
     ProfileData parsed;
     std::istringstream lines(std::move(contents));
     std::string line;
-    if (!std::getline(lines, line) || line != "WolcanProfile 1" || !std::getline(lines, line) || line.size() > 64) { return false; }
+    if (!std::getline(lines, line)) { return false; }
+    if (!line.empty() && line.back() == '\r') { line.pop_back(); }
+    bool legacy = line == "WolcanProfile 1";
+    if ((!legacy && line != "WolcanProfile 2") || !std::getline(lines, line) || line.size() > 64) { return false; }
 
     std::istringstream state(line);
     state.imbue(std::locale::classic());
     std::string extra;
-    if (!(state >> parsed.clears >> parsed.achievements >> parsed.selectedSkin) || (state >> extra)
-        || parsed.clears < 0 || parsed.achievements > 2047 || parsed.selectedSkin < 0 || parsed.selectedSkin > 5)
+    if (!(state >> parsed.clears >> parsed.achievements >> parsed.selectedSkin)
+        || (!legacy && !(state >> parsed.hammerBreaks)) || (state >> extra)
+        || parsed.clears < 0 || parsed.hammerBreaks < 0 || parsed.achievements > (legacy ? 2047u : 8191u)
+        || parsed.selectedSkin < 0 || parsed.selectedSkin > (legacy ? 5 : 7))
     {
         return false;
     }
 
-    while (std::getline(lines, line) && line != "end")
+    while (std::getline(lines, line))
     {
+        if (!line.empty() && line.back() == '\r') { line.pop_back(); }
+        if (line == "end") { break; }
         if (!readEntry(line, parsed)) { return false; }
     }
     if (line != "end" || lines.peek() != std::char_traits<char>::eof() || lines.bad()) { return false; }
+    std::for_each(parsed.ranks.cbegin(), parsed.ranks.cend(), [&parsed](const auto& entry)
+    {
+        parsed.completedLevels.insert(entry.first);
+    });
     profile = std::move(parsed);
     return true;
 }
@@ -71,11 +88,16 @@ bool saveProfile(const std::filesystem::path& filePath, const ProfileData& profi
 {
     std::ostringstream output;
     output.imbue(std::locale::classic());
-    output << "WolcanProfile 1" << std::endl;
-    output << profile.clears << ' ' << profile.achievements << ' ' << profile.selectedSkin << std::endl;
+    output << "WolcanProfile 2" << std::endl;
+    output << profile.clears << ' ' << profile.achievements << ' ' << profile.selectedSkin << ' '
+        << profile.hammerBreaks << std::endl;
     std::for_each(profile.ranks.cbegin(), profile.ranks.cend(), [&output](const auto& entry)
     {
         output << "rank " << entry.first << ' ' << entry.second.bestSteps << ' ' << entry.second.bestMedal << std::endl;
+    });
+    std::for_each(profile.completedLevels.cbegin(), profile.completedLevels.cend(), [&](const std::string& key)
+    {
+        if (!profile.ranks.contains(key)) { output << "clear " << key << std::endl; }
     });
     std::for_each(profile.collectibles.cbegin(), profile.collectibles.cend(), [&output](const auto& item)
     {

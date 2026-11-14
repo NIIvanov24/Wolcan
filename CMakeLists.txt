@@ -24,6 +24,9 @@ if(WOLCAN_BUILD_GAME)
     include(FetchContent)
     set(BUILD_EXAMPLES OFF CACHE BOOL "Build raylib examples" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+    if(EMSCRIPTEN)
+        set(PLATFORM Web CACHE STRING "raylib platform" FORCE)
+    endif()
 
     set(raylibArchive "https://codeload.github.com/raysan5/raylib/tar.gz/refs/tags/5.5")
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/downloads/raylib-5.5.tar.gz")
@@ -45,13 +48,28 @@ if(WOLCAN_BUILD_GAME)
 
     add_executable(Wolcan
         Wolcan/PL/Main.cpp Wolcan/PL/MainMenu.cpp Wolcan/PL/GameScreen.cpp
-        Wolcan/PL/MenuLayout.cpp Wolcan/PL/MenuArt.cpp Wolcan/PL/WindowControls.cpp Wolcan/PL/GameArt.cpp)
+        Wolcan/PL/MenuLayout.cpp Wolcan/PL/MenuArt.cpp Wolcan/PL/WindowControls.cpp Wolcan/PL/GameArt.cpp
+        Wolcan/PL/GameSettings.cpp Wolcan/PL/GameAudio.cpp)
     target_link_libraries(Wolcan PRIVATE BLL raylib)
     # Keep assets beside the executable for IDE launches and arbitrary working directories.
-    add_custom_target(WolcanAssets ALL
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:Wolcan>/assets"
-        VERBATIM)
-    add_dependencies(Wolcan WolcanAssets)
+    if(EMSCRIPTEN)
+        set_target_properties(Wolcan PROPERTIES SUFFIX ".html")
+        target_link_options(Wolcan PRIVATE "-sASYNCIFY" "-sASYNCIFY_STACK_SIZE=32768" "-sALLOW_MEMORY_GROWTH=1" "-fexceptions"
+            "-sEXPORTED_RUNTIME_METHODS=['HEAPF32']"
+            "SHELL:--preload-file \"${CMAKE_CURRENT_SOURCE_DIR}/assets@/assets\""
+            "SHELL:--shell-file \"${CMAKE_CURRENT_SOURCE_DIR}/Wolcan/PL/WebShell.html\"")
+        foreach(target Wolcan BLL DAL)
+            target_compile_options(${target} PRIVATE "-fexceptions")
+        endforeach()
+        file(GLOB_RECURSE webAssets CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/assets/*")
+        set_property(TARGET Wolcan APPEND PROPERTY LINK_DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/Wolcan/PL/WebShell.html" "${webAssets}")
+    else()
+        add_custom_target(WolcanAssets ALL
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:Wolcan>/assets"
+            VERBATIM)
+        add_dependencies(Wolcan WolcanAssets)
+    endif()
     set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Wolcan)
     if(MSVC)
         target_compile_options(Wolcan PRIVATE /W4 /WX /permissive- /utf-8)

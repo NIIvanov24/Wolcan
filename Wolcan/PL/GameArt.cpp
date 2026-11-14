@@ -1,8 +1,10 @@
 #include "GameArt.h"
+#include "GameSettings.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 namespace
@@ -56,22 +58,33 @@ namespace
         return color;
     }
 
+    Color floorColor(unsigned int hash)
+    {
+        unsigned char variation = static_cast<unsigned char>(hash % 6U);
+        return {static_cast<unsigned char>(52 + variation), static_cast<unsigned char>(36 + variation),
+            static_cast<unsigned char>(32 + variation), 255};
+    }
+
     void drawFloor(float x, float y, int tileSize, unsigned int hash)
     {
         float pixel = static_cast<float>(tileSize) / 16.0f;
-        unsigned char variation = static_cast<unsigned char>(hash % 8U);
         DrawRectangleRec({x, y, static_cast<float>(tileSize), static_cast<float>(tileSize)},
-            {static_cast<unsigned char>(48 + variation), static_cast<unsigned char>(34 + variation),
-                static_cast<unsigned char>(28 + variation), 255});
-        if (hash % 3U == 0U)
+            floorColor(hash));
+        Color facet = {124, 82, 61, 42};
+        float offset = static_cast<float>((hash >> 5) % 4U);
+        tilePixel(x, y, pixel, 1 + offset, 2, 7, 1, facet);
+        tilePixel(x, y, pixel, 2 + offset, 3, 5, 1, {112, 78, 63, 33});
+        tilePixel(x, y, pixel, 8 - offset, 11, 6, 1, {26, 26, 32, 80});
+        tilePixel(x, y, pixel, 9 - offset, 12, 4, 1, {27, 25, 29, 81});
+        if ((hash & 3U) == 0U)
         {
-            tilePixel(x, y, pixel, 2, 12, 3, 1, {31, 26, 27, 150});
-            tilePixel(x, y, pixel, 5, 13, 1, 2, {31, 26, 27, 150});
+            tilePixel(x, y, pixel, 2, 12, 2, 1, {31, 26, 27, 160});
+            tilePixel(x, y, pixel, 2, 11, 1, 1, {115, 77, 55, 160});
+            tilePixel(x, y, pixel, 13, 8, 1, 1, {134, 95, 61, 127});
         }
         float fleckX = 2.0f + static_cast<float>(hash % 10U);
         float fleckY = 3.0f + static_cast<float>((hash >> 5) % 9U);
-        tilePixel(x, y, pixel, fleckX, fleckY, 2, 1, {99, 68, 45, 170});
-        tilePixel(x, y, pixel, 3, 12, 1, 1, {27, 25, 29, 190});
+        tilePixel(x, y, pixel, fleckX, fleckY, 1, 1, {123, 84, 60, 146});
     }
 
     void drawWall(const Maze& maze, int row, int column, float x, float y, int tileSize, float time)
@@ -79,7 +92,7 @@ namespace
         unsigned int hash = tileHash(row, column);
         float pixel = static_cast<float>(tileSize) / 16.0f;
         unsigned char shade = static_cast<unsigned char>(hash % 9U);
-        drawFloor(x, y, tileSize, hash);
+        tilePixel(x, y, pixel, 0, 0, 16, 16, floorColor(hash));
         bool openLeft = maze.isWalkable(row, column - 1);
         bool openRight = maze.isWalkable(row, column + 1);
         bool openTop = maze.isWalkable(row - 1, column);
@@ -107,6 +120,13 @@ namespace
             tilePixel(x, y, pixel, 8, 6, 1, 3, {41, 35, 39, 255});
             tilePixel(x, y, pixel, 10, 9, 2, 1, {105, 80, 65, 190});
         }
+        else
+        {
+            tilePixel(x, y, pixel, 5, 4, 6, 2, {106, 80, 72, 160});
+            tilePixel(x, y, pixel, 4, 6, 5, 2, {84, 64, 62, 230});
+            tilePixel(x, y, pixel, 5, 8, 2, 1, {119, 89, 68, 160});
+            tilePixel(x, y, pixel, 10, 5, 1, 3, {41, 33, 40, 185});
+        }
         if (maze.isWalkable(row + 1, column))
         {
             tilePixel(x, y, pixel, 0, 12, 16, 4, {20, 20, 27, 255});
@@ -127,9 +147,11 @@ namespace
         }
         if (maze.getCell(row, column) == '?')
         {
-            tilePixel(x, y, pixel, 9, 3, 1, 3, {69, 117, 112, 230});
-            tilePixel(x, y, pixel, 8, 6, 1, 3, {104, 144, 121, 230});
-            tilePixel(x, y, pixel, 9, 9, 1, 2, {190, 138, 67, 230});
+            tilePixel(x, y, pixel, 9, 4, 1, 3, {32, 37, 42, 255});
+            tilePixel(x, y, pixel, 8, 7, 1, 3, {34, 50, 49, 255});
+            tilePixel(x, y, pixel, 9, 7, 1, 2, {105, 156, 134, 230});
+            tilePixel(x, y, pixel, 8, 8, 1, 1, {180, 196, 151, 230});
+            tilePixel(x, y, pixel, 9, 10, 1, 2, {196, 139, 74, 230});
         }
     }
 
@@ -146,55 +168,98 @@ namespace
         tilePixel(x, y, pixel, 8, 11, 3, 1, {36, 33, 41, 255});
     }
 
-    void drawFragileFloor(float x, float y, float pixel, const CellFeature& feature)
+    void drawCracks(float x, float y, float pixel, float progress, Color glow)
     {
-        float crack = feature.phase == HazardPhase::Warning ? feature.phaseProgress : 0.0f;
-        Color seam = {29, 19, 23, 255};
-        Color glow = withOpacity({255, 124, 48, 255}, 0.25f + 0.75f * crack);
-        tilePixel(x, y, pixel, 1, 1, 14, 14, {43, 26, 29, 255});
-        tilePixel(x, y, pixel, 2, 2, 12, 11, {98, 60, 47, 255});
-        tilePixel(x, y, pixel, 2, 2, 12, 1, {145, 94, 65, 255});
-        tilePixel(x, y, pixel, 3, 13, 10, 1, glow);
-        tilePixel(x, y, pixel, 5, 2, 2, 4, seam);
-        tilePixel(x, y, pixel, 6, 5, 4, 2, seam);
-        tilePixel(x, y, pixel, 8, 7, 2, 3, seam);
-        tilePixel(x, y, pixel, 9, 9, 4, 2, seam);
-        tilePixel(x, y, pixel, 12, 10, 2, 3, seam);
-        tilePixel(x, y, pixel, 7, 6, 2, 1, glow);
-        tilePixel(x, y, pixel, 9, 7, 1, 3, glow);
-        tilePixel(x, y, pixel, 10, 10, 3, 1, glow);
-        if (crack > 0.0f)
+        const Rectangle segments[] = {{7, 6, 3, 2}, {9, 7, 2, 3}, {6, 3, 2, 4}, {10, 9, 3, 2},
+            {12, 10, 2, 3}, {4, 7, 4, 1}, {2, 8, 3, 1}, {5, 1, 2, 3}, {13, 12, 2, 2},
+            {7, 8, 1, 3}, {6, 11, 1, 3}, {12, 7, 1, 2}, {13, 6, 2, 1}};
+        const int segmentCount = static_cast<int>(sizeof(segments) / sizeof(segments[0]));
+        int visibleCount = std::min(segmentCount, 2 + static_cast<int>(progress * static_cast<float>(segmentCount)));
+        Color seam = {28, 19, 27, glow.a};
+        for (int segmentIndex = 0; segmentIndex < visibleCount; segmentIndex++)
         {
-            float spread = std::floor(crack * 3.0f);
-            tilePixel(x, y, pixel, 3, 7 + spread, 4, 1, seam);
-            tilePixel(x, y, pixel, 4 + spread, 8, 2, 4, glow);
-            tilePixel(x, y, pixel, 11, 4 + spread, 2, 1, glow);
-            tilePixel(x, y, pixel, 2, 2, 12, 11, withOpacity({255, 88, 42, 64}, crack));
+            const Rectangle& segment = segments[segmentIndex];
+            tilePixel(x, y, pixel, segment.x, segment.y, segment.width + 1.0f, segment.height, seam);
+            tilePixel(x, y, pixel, segment.x, segment.y, segment.width, 1, glow);
         }
     }
 
-    void drawLava(float x, float y, float pixel, unsigned int hash, float time)
+    bool hasOpenLava(const GameLogic& game, int row, int column)
     {
-        tilePixel(x, y, pixel, 0, 0, 16, 16, {65, 28, 29, 255});
-        tilePixel(x, y, pixel, 1, 1, 14, 14, {145, 42, 28, 255});
-        tilePixel(x, y, pixel, 2, 2, 12, 12, {216, 66, 26, 255});
-        tilePixel(x, y, pixel, 3, 3, 10, 10, {239, 91, 28, 255});
+        return game.getCellFeature(row, column).hazard == HazardKind::Lava;
+    }
+
+    void drawFloorWarning(float x, float y, float pixel, float progress)
+    {
+        Color ember = {255, 142, 57, 255};
+        tilePixel(x, y, pixel, 0, 0, 16, 16, withOpacity({166, 66, 38, 95}, progress));
+        drawCracks(x, y, pixel, progress, ember);
+        // A white-hot edge stays visible even when the sprite covers the center.
+        float spread = std::floor(progress * 4.0f);
+        tilePixel(x, y, pixel, 0, 5, 1, 3 + spread, {104, 47, 41, 255});
+        tilePixel(x, y, pixel, 15, 8 - spread, 1, 5 + spread, {110, 56, 41, 255});
+        tilePixel(x, y, pixel, 1, 7, 1, 1 + spread, ember);
+        tilePixel(x, y, pixel, 14, 11 - spread, 1, 2 + spread, ember);
+        tilePixel(x, y, pixel, 4, 15, 1 + spread, 1, {255, 201, 99, 255});
+    }
+
+    void drawLava(const GameLogic& game, int row, int column, float x, float y, float pixel, float time, float collapse)
+    {
+        unsigned int hash = tileHash(row, column);
+        float left = hasOpenLava(game, row, column - 1) ? 0.0f : 1.0f;
+        float right = hasOpenLava(game, row, column + 1) ? 16.0f : 15.0f;
+        float top = hasOpenLava(game, row - 1, column) ? 0.0f : 1.0f;
+        float bottom = hasOpenLava(game, row + 1, column) ? 16.0f : 15.0f;
+        tilePixel(x, y, pixel, 0, 0, 16, 16, {68, 31, 36, 255});
+        tilePixel(x, y, pixel, left, top, right - left, bottom - top, {196, 53, 31, 255});
+        float innerLeft = left * 2.0f;
+        float innerTop = top * 2.0f;
+        float innerRight = right - (16.0f - right);
+        float innerBottom = bottom - (16.0f - bottom);
+        tilePixel(x, y, pixel, innerLeft, innerTop, innerRight - innerLeft, innerBottom - innerTop, {237, 93, 32, 255});
         for (int lane = 0; lane < 4; lane++)
         {
             float wave = std::fmod(time * (5.0f + static_cast<float>(lane))
                 + static_cast<float>(hash % 13U) + 4.0f * static_cast<float>(lane), 11.0f);
             float offset = std::floor(wave);
             float lineY = 3.0f + static_cast<float>(lane) * 3.0f;
-            tilePixel(x, y, pixel, 2 + offset, lineY, std::min(5.0f, 12.0f - offset), 1,
-                {255, 164, 45, 255});
+            tilePixel(x, y, pixel, 2 + offset, lineY + 1.0f, std::min(5.0f, 12.0f - offset), 1, {250, 111, 34, 255});
+            tilePixel(x, y, pixel, 2 + offset, lineY, std::min(5.0f, 12.0f - offset), 1, {255, 158, 49, 255});
             if (offset < 10.0f)
             {
                 tilePixel(x, y, pixel, 3 + offset, lineY, std::min(2.0f, 11.0f - offset), 1,
                     {255, 220, 112, 255});
             }
         }
-        tilePixel(x, y, pixel, 1, 2, 1, 4, {83, 38, 32, 255});
-        tilePixel(x, y, pixel, 13, 13, 2, 2, {83, 38, 32, 255});
+        if (left > 0.0f)
+        {
+            tilePixel(x, y, pixel, 1, 3, 1, 7, {255, 121, 44, 255});
+            tilePixel(x, y, pixel, 1, 4, 1, 2, {255, 170, 58, 255});
+        }
+        if (right < 16.0f)
+        {
+            tilePixel(x, y, pixel, 14, 6, 1, 7, {252, 124, 41, 255});
+            tilePixel(x, y, pixel, 14, 10, 1, 2, {255, 179, 59, 255});
+        }
+        float bubble = std::fmod(time * 1.4f + static_cast<float>((hash >> 4) % 19U) * 0.13f, 1.0f);
+        if (bubble < 0.35f)
+        {
+            float bubbleX = 4.0f + static_cast<float>((hash >> 9) % 6U);
+            tilePixel(x, y, pixel, bubbleX, 6, 2, 2, {168, 52, 35, 255});
+            tilePixel(x, y, pixel, bubbleX, 6, 1, 1, {255, 211, 108, 255});
+        }
+        if (collapse < 1.0f)
+        {
+            for (int shardIndex = 0; shardIndex < 7; shardIndex++)
+            {
+                unsigned int shard = tileHash(row + shardIndex, column);
+                float shardX = 2.0f + static_cast<float>(shard % 10U);
+                float shardY = 1.0f + static_cast<float>((shard >> 7) % 8U) - collapse * 4.0f
+                    + collapse * collapse * 10.0f;
+                tilePixel(x, y, pixel, shardX, shardY, 2, 2, withOpacity({74, 46, 44, 255}, 1.0f - collapse));
+                tilePixel(x, y, pixel, shardX, shardY, 1, 1, withOpacity({255, 169, 82, 255}, 1.0f - collapse));
+            }
+        }
     }
 
     void drawWallSpikes(float x, float y, float pixel, const CellFeature& feature)
@@ -215,7 +280,12 @@ namespace
             }
         };
         spikePixel(2, 0, 12, {35, 26, 31, 255});
-        spikePixel(3, 1, 10, {101, 71, 63, 255});
+        spikePixel(2, 1, 12, {106, 78, 65, 255});
+        spikePixel(4, 1, 2, {47, 32, 37, 255});
+        spikePixel(7, 1, 2, {47, 32, 37, 255});
+        spikePixel(10, 1, 2, {47, 32, 37, 255});
+        spikePixel(2, 2, 1, {165, 116, 74, 255});
+        spikePixel(13, 2, 1, {165, 116, 74, 255});
         if (feature.phase == HazardPhase::Dormant) { return; }
         if (feature.phase == HazardPhase::Warning)
         {
@@ -237,8 +307,9 @@ namespace
             for (int spikeIndex = 0; spikeIndex < 3; spikeIndex++)
             {
                 float across = 3.0f + 4.0f * static_cast<float>(spikeIndex) + inset;
-                spikePixel(across, depth, width, {169, 128, 104, 255});
-                spikePixel(across, depth, 1, {238, 199, 144, 255});
+                spikePixel(across, depth, width, {148, 110, 102, 255});
+                spikePixel(across, depth, 1, {231, 189, 139, 255});
+                if (depthIndex == length - 1) { spikePixel(across, depth, 1, {255, 225, 170, 255}); }
             }
         }
     }
@@ -288,6 +359,87 @@ namespace
         }
     }
 
+    void drawMagicHammer(float x, float y, float pixel, float opacity = 1.0f)
+    {
+        Color edge = withOpacity({43, 25, 47, 255}, opacity);
+        Color gold = withOpacity({233, 130, 59, 255}, opacity);
+        Color purple = withOpacity({106, 62, 116, 255}, opacity);
+        Color shine = withOpacity({255, 234, 147, 255}, opacity);
+        tilePixel(x, y, pixel, 7, 6, 4, 9, edge);
+        tilePixel(x, y, pixel, 8, 6, 2, 8, gold);
+        tilePixel(x, y, pixel, 7, 12, 4, 2, purple);
+        tilePixel(x, y, pixel, 7, 14, 4, 1, gold);
+        tilePixel(x, y, pixel, 2, 2, 12, 7, edge);
+        tilePixel(x, y, pixel, 1, 3, 14, 5, edge);
+        tilePixel(x, y, pixel, 2, 3, 12, 4, purple);
+        tilePixel(x, y, pixel, 3, 2, 8, 1, withOpacity({227, 155, 224, 255}, opacity));
+        tilePixel(x, y, pixel, 3, 3, 2, 4, gold);
+        tilePixel(x, y, pixel, 11, 3, 2, 4, gold);
+        tilePixel(x, y, pixel, 7, 3, 2, 4, gold);
+        tilePixel(x, y, pixel, 7, 4, 2, 2, shine);
+        tilePixel(x, y, pixel, 1, 1, 1, 1, shine);
+        tilePixel(x, y, pixel, 14, 9, 1, 1, shine);
+    }
+
+    void cornerBrackets(float x, float y, float pixel, float left, float top, float right, float bottom, Color color)
+    {
+        tilePixel(x, y, pixel, left, top, 3, 1, color);
+        tilePixel(x, y, pixel, left, top + 1.0f, 1, 2, color);
+        tilePixel(x, y, pixel, right - 2.0f, top, 3, 1, color);
+        tilePixel(x, y, pixel, right, top + 1.0f, 1, 2, color);
+        tilePixel(x, y, pixel, left, bottom, 3, 1, color);
+        tilePixel(x, y, pixel, left, bottom - 2.0f, 1, 2, color);
+        tilePixel(x, y, pixel, right - 2.0f, bottom, 3, 1, color);
+        tilePixel(x, y, pixel, right, bottom - 2.0f, 1, 2, color);
+    }
+
+    void drawHammerTarget(float x, float y, float pixel, float time)
+    {
+        float pulse = 0.8f + std::sin(time * 7.0f) * 0.2f;
+        cornerBrackets(x, y, pixel, 1, 1, 14, 14, withOpacity({242, 158, 205, 255}, pulse));
+        Color reticle = withOpacity({255, 220, 142, 255}, pulse);
+        tilePixel(x, y, pixel, 7, 7, 2, 2, reticle);
+        tilePixel(x, y, pixel, 6, 6, 1, 1, reticle);
+        tilePixel(x, y, pixel, 9, 9, 1, 1, reticle);
+    }
+
+    void drawHammerStrike(float x, float y, float pixel, float flash)
+    {
+        float progress = 1.0f - flash;
+        drawCracks(x, y, pixel, std::min(1.0f, progress * 6.0f), withOpacity({250, 177, 223, 255}, flash));
+        if (progress < 0.45f)
+        {
+            drawMagicHammer(x + 3.0f * pixel, y - (5.0f - progress * 10.0f) * pixel, pixel * 0.68f,
+                1.0f - progress * 2.0f);
+        }
+        for (int particleIndex = 0; particleIndex < 9; particleIndex++)
+        {
+            unsigned int hash = tileHash(particleIndex, 514);
+            float angle = static_cast<float>(particleIndex) * 0.70f;
+            float radius = progress * (8.0f + static_cast<float>(hash % 8U));
+            float left = 8.0f + std::round(radius * std::cos(angle));
+            float top = 7.0f + std::round(radius * std::sin(angle) - progress * (1.0f - progress) * 14.0f);
+            float size = particleIndex % 3 == 0 ? 1.0f : 2.0f;
+            Color color = particleIndex % 3 == 0 ? Color{255, 224, 158, 255} : Color{126, 92, 93, 255};
+            tilePixel(x, y, pixel, left, top, size, size, withOpacity(color, flash));
+        }
+    }
+
+    void drawHammerGrant(float x, float y, float pixel, float flash)
+    {
+        float progress = 1.0f - flash;
+        float radius = 4.0f + progress * 21.0f;
+        for (int sparkIndex = 0; sparkIndex < 12; sparkIndex++)
+        {
+            float angle = static_cast<float>(sparkIndex) * 0.5235988f + progress * 1.3f;
+            float left = 8.0f + std::round(radius * std::cos(angle));
+            float top = 7.0f + std::round(radius * 0.58f * std::sin(angle) - progress * 12.0f);
+            Color spark = withOpacity(sparkIndex % 2 == 0 ? Color{247, 178, 116, 255} : Color{244, 168, 237, 255}, flash);
+            tilePixel(x, y, pixel, left, top, 2, 1, spark);
+            tilePixel(x, y, pixel, left, top - 1, 1, 3, spark);
+        }
+    }
+
     void drawMarker(float x, float y, int tileSize, bool exit, float time)
     {
         float pixel = static_cast<float>(tileSize) / 16.0f;
@@ -314,29 +466,35 @@ namespace
         }
     }
 
-    void drawExplorer(float x, float y, int tileSize, const GameVisualState& state,
+    void drawPlayer(float x, float y, int tileSize, const GameVisualState& state,
         Texture2D texture, float deathProgress, bool inLava)
     {
         float pixel = static_cast<float>(tileSize) / 16.0f;
         float swing = state.moving ? std::sin(state.walkPhase) : 0.0f;
-        float bob = state.moving ? (std::abs(swing) > 0.5f ? -1.0f : 0.0f)
-            : (std::sin(state.idleTime * 2.2f) > 0.8f ? -0.4f : 0.0f);
-        float opacity = 1.0f - deathProgress;
+        float bob = state.moving ? (std::abs(swing) > 0.42f ? -1.0f : 0.0f)
+            : (std::sin(state.idleTime * 2.4f) > 0.58f ? -1.0f : 0.0f);
+        float opacity = (1.0f - deathProgress) * (1.0f - 0.65f * state.respawnFlash);
         float tint = std::max(state.damageFlash, deathProgress);
         Color hitColor = {255, static_cast<unsigned char>(255.0f - tint * 132.0f),
             static_cast<unsigned char>(255.0f - tint * 158.0f), 255};
-        tilePixel(x, y, pixel, 3, 14, 11, 2, withOpacity({10, 13, 19, 150}, opacity));
-        y += std::floor(deathProgress * 5.0f + (inLava ? 1.0f : 0.0f)) * pixel;
+        if (!inLava) { tilePixel(x, y, pixel, 3, 14, 11, 2, withOpacity({10, 13, 19, 150}, opacity)); }
+        float shake = std::round(std::sin(tint * 17.0f) * tint);
+        float sinking = inLava ? 2.0f + std::round(state.lavaEnterFlash * 2.0f) : 0.0f;
+        float leap = std::round(std::sin(state.lavaExitFlash * 3.1415927f) * -3.0f);
+        float drop = std::floor(deathProgress * 5.0f) + sinking;
+        x += shake * pixel;
+        y += (drop + leap) * pixel;
         if (texture.id != 0)
         {
             // Columns are idle and two strides. Rows are up, down, left and right.
             const float frameSize = 16.0f;
-            int frame = swing > 0.5f ? 1 : (swing < -0.5f ? 2 : 0);
+            int frame = swing > 0.42f ? 1 : (swing < -0.42f ? 2 : 0);
             float direction = static_cast<float>(std::clamp(state.facing, 0, 3));
-            float spriteY = state.moving ? y : std::round(y + bob * pixel);
+            float spriteY = std::round(y + bob * pixel);
             float size = static_cast<float>(tileSize);
-            DrawTexturePro(texture, {static_cast<float>(frame) * frameSize, direction * frameSize, frameSize, frameSize},
-                {x, spriteY, size, size}, {0, 0}, 0, withOpacity(hitColor, opacity));
+            float height = frameSize - sinking;
+            DrawTexturePro(texture, {static_cast<float>(frame) * frameSize, direction * frameSize, frameSize, height},
+                {x, spriteY, size, height * pixel}, {0, 0}, 0, withOpacity(hitColor, opacity));
             return;
         }
 
@@ -392,6 +550,10 @@ namespace
 
     void drawDeath(float x, float y, float pixel, float progress)
     {
+        float flash = std::max(0.0f, 1.0f - progress * 3.0f);
+        float spread = std::floor(4.0f + progress * 14.0f);
+        cornerBrackets(x, y, pixel, 8.0f - spread, 8.0f - spread, 7.0f + spread, 7.0f + spread,
+            withOpacity({255, 177, 98, 210}, flash));
         for (int fragment = 0; fragment < 10; fragment++)
         {
             unsigned int hash = tileHash(fragment, 0);
@@ -403,6 +565,34 @@ namespace
             Color color = fragment % 2 == 0 ? Color{253, 164, 67, 255} : Color{174, 63, 45, 255};
             tilePixel(x, y, pixel, left, top, size, size, withOpacity(color, 1.0f - progress));
         }
+    }
+
+    void drawRespawn(float x, float y, float pixel, float flash)
+    {
+        float height = std::round(std::sin(flash * 3.1415927f) * 7.0f);
+        float width = 4.0f + std::floor((1.0f - flash) * 5.0f);
+        Color light = withOpacity({146, 249, 206, 255}, flash);
+        cornerBrackets(x, y, pixel, 7.0f - width, 10.0f - height, 8.0f + width, 15.0f, light);
+        if (height > 0.0f)
+        {
+            tilePixel(x, y, pixel, 5, 14.0f - height, 1, height, withOpacity(light, 0.36f));
+            tilePixel(x, y, pixel, 10, 14.0f - height, 1, height, withOpacity(light, 0.55f));
+        }
+    }
+
+    void drawLavaContact(float x, float y, float pixel, float time, float flash)
+    {
+        float progress = 1.0f - flash;
+        Color splash = withOpacity({255, 173, 67, 255}, flash);
+        for (int dropIndex = 0; dropIndex < 6; dropIndex++)
+        {
+            float direction = static_cast<float>(dropIndex) - 2.5f;
+            float left = 8.0f + std::round(direction * (1.2f + progress * 3.0f));
+            float top = 13.0f - std::round(progress * (1.0f - progress) * (30.0f - std::abs(direction) * 7.0f));
+            tilePixel(x, y, pixel, left, top, 1, 2, splash);
+        }
+        float shimmer = std::floor(std::fmod(time * 7.0f, 4.0f));
+        tilePixel(x, y, pixel, 4.0f + shimmer, 14.0f, 4, 1, withOpacity({255, 211, 101, 255}, flash * 0.9f));
     }
 
     Texture2D loadCharacterTexture(const std::string& assetRoot, Skin skin)
@@ -477,6 +667,49 @@ namespace
         tilePixel(x, y, pixel, 7, 10, 3, 2, {255, 133, 59, 255});
         tilePixel(x, y, pixel, 8, 8, 1, 3, {255, 229, 146, 255});
     }
+
+    std::string keyLegend(const GameSettings& settings, GameAction action, const char* label)
+    {
+        return std::string(keyName(settings.key(action))) + "  " + label;
+    }
+}
+
+bool drawSecretAchievementIcon(Rectangle bounds, const char* achievementName)
+{
+    float pixel = std::min(bounds.width, bounds.height) / 16.0f;
+    float x = bounds.x + (bounds.width - 16.0f * pixel) * 0.5f;
+    float y = bounds.y + (bounds.height - 16.0f * pixel) * 0.5f;
+    if (std::strcmp(achievementName, "Cheater!") == 0)
+    {
+        tilePixel(x, y, pixel, 0, 1, 16, 14, {72, 41, 54, 255});
+        tilePixel(x, y, pixel, 1, 0, 14, 16, {81, 47, 59, 255});
+        tilePixel(x, y, pixel, 0, 10, 6, 4, {116, 67, 63, 255});
+        tilePixel(x, y, pixel, 1, 8, 4, 2, {160, 88, 66, 255});
+        tilePixel(x, y, pixel, 1, 5, 1, 1, {232, 148, 87, 255});
+        tilePixel(x, y, pixel, 4, 6, 1, 1, {232, 148, 87, 255});
+        tilePixel(x, y, pixel, 11, 11, 4, 3, {142, 83, 71, 255});
+        tilePixel(x, y, pixel, 10, 14, 2, 1, {189, 114, 81, 255});
+        drawMagicHammer(x + 3.0f * pixel, y + pixel, pixel * 0.74f);
+        return true;
+    }
+    if (std::strcmp(achievementName, "Extreme ball knowledge!") == 0)
+    {
+        tilePixel(x, y, pixel, 4, 1, 8, 14, {110, 75, 129, 255});
+        tilePixel(x, y, pixel, 2, 3, 12, 10, {110, 75, 129, 255});
+        tilePixel(x, y, pixel, 4, 3, 8, 10, {49, 35, 60, 255});
+        tilePixel(x, y, pixel, 2, 6, 12, 5, {220, 164, 201, 255});
+        tilePixel(x, y, pixel, 1, 7, 14, 5, {156, 101, 146, 255});
+        tilePixel(x, y, pixel, 2, 7, 12, 4, {240, 190, 204, 255});
+        tilePixel(x, y, pixel, 4, 7, 1, 3, {68, 42, 65, 255});
+        tilePixel(x, y, pixel, 3, 8, 3, 1, {68, 42, 65, 255});
+        tilePixel(x, y, pixel, 10, 9, 1, 1, {149, 55, 84, 255});
+        tilePixel(x, y, pixel, 12, 8, 1, 1, {149, 55, 84, 255});
+        tilePixel(x, y, pixel, 7, 2, 2, 1, {255, 220, 147, 255});
+        tilePixel(x, y, pixel, 7, 3, 1, 2, {255, 220, 147, 255});
+        tilePixel(x, y, pixel, 8, 13, 1, 1, {255, 220, 147, 255});
+        return true;
+    }
+    return false;
 }
 
 GameViewLayout createGameViewLayout(int screenWidth, int screenHeight,
@@ -564,6 +797,17 @@ void GameArt::centered(const GameViewLayout& layout, const char* text, float cen
         fontSize, spacing, color);
 }
 
+void GameArt::fittedLabel(const GameViewLayout& layout, const char* text, float x, float y,
+    float size, float width, Color color) const
+{
+    float textWidth = MeasureTextEx(bodyFont, text, size * layout.scale, 0.5f * layout.scale).x;
+    if (textWidth > width * layout.scale)
+    {
+        size *= width * layout.scale / textWidth;
+    }
+    label(layout, text, x, y, size, color);
+}
+
 void GameArt::drawHud(const GameLogic& game, const GameVisualState& state, const GameViewLayout& layout) const
 {
     panel(layout, 32, 28, 1536, 112);
@@ -624,7 +868,8 @@ void GameArt::drawHud(const GameLogic& game, const GameVisualState& state, const
         1463, 75, 25, state.pickupFlash > 0.0f ? amber : cream);
 }
 
-void GameArt::drawMap(const GameLogic& game, const GameVisualState& state, const GameViewLayout& layout) const
+void GameArt::drawMap(const GameLogic& game, const GameVisualState& state,
+    const GameViewLayout& layout, const GameSettings& settings) const
 {
     panel(layout, 1230, 180, 338, 662);
     Color cream = {233, 215, 183, 255};
@@ -647,6 +892,10 @@ void GameArt::drawMap(const GameLogic& game, const GameVisualState& state, const
             Color color = {75, 66, 64, 255};
             if (cell == '#' || cell == '?') { color = {34, 35, 45, 255}; }
             if (cell == 'X') { color = {48, 44, 51, 255}; }
+            if (maze.getDifficulty() == Difficulty::ExtraHard && hasOpenLava(game, row, column))
+            {
+                color = {231, 113, 53, 255};
+            }
             DrawRectangleRec({left + static_cast<float>(column) * pixel, top + static_cast<float>(row) * pixel,
                 pixel, pixel}, color);
         }
@@ -670,27 +919,51 @@ void GameArt::drawMap(const GameLogic& game, const GameVisualState& state, const
     label(layout, "EXIT", 1468, 490, 20, muted);
     DrawRectangleRec(scaledRectangle(layout, 1250, 520, 296, 1), {76, 60, 51, 255});
 
-    MedalTargets targets = medalTargets(game.getShortestPath(), maze.getDifficulty());
-    char goldTime[32] = {};
-    char silverTime[32] = {};
-    formatTime(targets.goldSeconds, goldTime, sizeof(goldTime));
-    formatTime(targets.silverSeconds, silverTime, sizeof(silverTime));
-    label(layout, "MEDALS", 1250, 529, 18, cream);
-    label(layout, "MAX TIME", 1372, 529, 17, muted);
-    label(layout, "MAX STEPS", 1465, 529, 17, muted);
-    label(layout, "Gold", 1250, 553, 21, medalArt(Medal::Gold).shine);
-    label(layout, goldTime, 1372, 553, 20, cream);
-    label(layout, TextFormat("%i", targets.goldSteps), 1465, 553, 20, cream);
-    label(layout, "Silver", 1250, 578, 21, medalArt(Medal::Silver).shine);
-    label(layout, silverTime, 1372, 578, 20, cream);
-    label(layout, TextFormat("%i", targets.silverSteps), 1465, 578, 20, cream);
-    label(layout, "Bronze", 1250, 603, 21, medalArt(Medal::Bronze).shine);
-    label(layout, "Finish the maze", 1372, 603, 20, cream);
+    if (game.isAssisted())
+    {
+        label(layout, "ASSISTED EXPEDITION", 1250, 546, 21, {255, 194, 101, 255});
+        label(layout, "Medals and records are disabled", 1250, 578, 19, muted);
+        label(layout, "after breaking a wall.", 1250, 602, 19, muted);
+    }
+    else
+    {
+        MedalTargets targets = medalTargets(game.getShortestPath(), maze.getDifficulty());
+        char goldTime[32] = {};
+        char silverTime[32] = {};
+        formatTime(targets.goldSeconds, goldTime, sizeof(goldTime));
+        formatTime(targets.silverSeconds, silverTime, sizeof(silverTime));
+        label(layout, "MEDALS", 1250, 529, 18, cream);
+        label(layout, "MAX TIME", 1372, 529, 17, muted);
+        label(layout, "MAX STEPS", 1465, 529, 17, muted);
+        label(layout, "Gold", 1250, 553, 21, medalArt(Medal::Gold).shine);
+        label(layout, goldTime, 1372, 553, 20, cream);
+        label(layout, TextFormat("%i", targets.goldSteps), 1465, 553, 20, cream);
+        label(layout, "Silver", 1250, 578, 21, medalArt(Medal::Silver).shine);
+        label(layout, silverTime, 1372, 578, 20, cream);
+        label(layout, TextFormat("%i", targets.silverSteps), 1465, 578, 20, cream);
+        label(layout, "Bronze", 1250, 603, 21, medalArt(Medal::Bronze).shine);
+        label(layout, "Finish the maze", 1372, 603, 20, cream);
+    }
     DrawRectangleRec(scaledRectangle(layout, 1250, 633, 296, 1), {76, 60, 51, 255});
 
-    if (maze.getDifficulty() == Difficulty::ExtraHard)
+    if (game.getHammerUses() > 0 || game.isAssisted() || state.hammerGrantFlash > 0.0f)
     {
-        label(layout, "Cracked floors can collapse.", 1250, 643, 19, muted);
+        Color gold = {255, 200, 131, 255};
+        Rectangle icon = scaledRectangle(layout, 1250, 647, 43, 43);
+        drawMagicHammer(icon.x, icon.y, icon.width / 16.0f, game.getHammerUses() > 0 ? 1.0f : 0.45f);
+        label(layout, "MAGIC HAMMER", 1304, 642, 20, gold);
+        label(layout, TextFormat("%i / 10", game.getHammerUses()), 1480, 642, 21, gold);
+        if (game.getHammerUses() > 0)
+        {
+            fittedLabel(layout, keyLegend(settings, GameAction::Hammer, "Strike selected wall").c_str(),
+                1304, 665, 18, 240, muted);
+            label(layout, "Face a wall to select it", 1304, 686, 17, muted);
+        }
+        else { label(layout, "No uses left", 1304, 665, 18, muted); }
+    }
+    else if (maze.getDifficulty() == Difficulty::ExtraHard)
+    {
+        label(layout, "Unstable floors can collapse.", 1250, 643, 19, muted);
         label(layout, "Orange flashes warn of spikes.", 1250, 665, 19, muted);
         label(layout, "Mineral seams hide paths.", 1250, 687, 19, muted);
     }
@@ -701,20 +974,22 @@ void GameArt::drawMap(const GameLogic& game, const GameVisualState& state, const
         label(layout, "Walk into cracked walls.", 1250, 687, 19, muted);
     }
     DrawRectangleRec(scaledRectangle(layout, 1250, 710, 296, 1), {76, 60, 51, 255});
-    label(layout, "ARROWS", 1250, 716, 19, cream);
-    label(layout, "Move", 1380, 716, 19, muted);
-    label(layout, "P", 1250, 738, 19, cream);
-    label(layout, "Pause / resume", 1380, 738, 19, muted);
-    label(layout, "R  /  T", 1250, 760, 19, cream);
-    label(layout, "New / same seed", 1380, 760, 19, muted);
-    label(layout, "ESC", 1250, 782, 19, cream);
-    label(layout, "Main menu", 1380, 782, 19, muted);
-    label(layout, "N", 1250, 804, 19, cream);
-    label(layout, "Next after escape", 1380, 804, 19, muted);
+    std::string movement = keyName(settings.key(GameAction::Up));
+    movement += std::string(" / ") + keyName(settings.key(GameAction::Down));
+    movement += std::string(" / ") + keyName(settings.key(GameAction::Left));
+    movement += std::string(" / ") + keyName(settings.key(GameAction::Right));
+    label(layout, "Move", 1250, 716, 19, muted);
+    fittedLabel(layout, movement.c_str(), 1314, 716, 17, 230, cream);
+    label(layout, keyLegend(settings, GameAction::Pause, "Pause / resume").c_str(), 1250, 738, 19, cream);
+    std::string seed = keyLegend(settings, GameAction::Restart, "New seed");
+    seed += "   /   " + keyLegend(settings, GameAction::Replay, "Replay");
+    fittedLabel(layout, seed.c_str(), 1250, 760, 19, 296, cream);
+    label(layout, keyLegend(settings, GameAction::Menu, "Main menu").c_str(), 1250, 782, 19, cream);
+    label(layout, keyLegend(settings, GameAction::NextLevel, "Next after escape").c_str(), 1250, 804, 19, cream);
 }
 
 void GameArt::drawOverlay(const GameLogic& game, const GameVisualState& state,
-    const GameViewLayout& layout, const Progression* progression) const
+    const GameViewLayout& layout, const Progression* progression, const GameSettings& settings) const
 {
     if (!game.isPaused() && !game.hasWon()) { return; }
     DrawRectangleRec(layout.world, {8, 10, 17, 170});
@@ -722,13 +997,16 @@ void GameArt::drawOverlay(const GameLogic& game, const GameVisualState& state,
     Color cream = {248, 226, 183, 255};
     Color muted = {171, 154, 137, 255};
     Color teal = {120, 201, 173, 255};
+    std::string actions = keyLegend(settings, GameAction::Restart, "NEW SEED");
+    actions += "     " + keyLegend(settings, GameAction::Replay, "REPLAY");
+    actions += "     " + keyLegend(settings, GameAction::Menu, "MENU");
     if (!game.hasWon())
     {
         panel(layout, 303, 385, 632, 254);
         DrawRectangleRec(scaledRectangle(layout, 553, 385, 132, 3), amber);
         centered(layout, "PAUSED", 619, 420, 30, amber, true);
-        centered(layout, "P   RESUME EXPEDITION", 619, 508, 24, teal);
-        centered(layout, "R  NEW SEED     T  REPLAY     ESC  MENU", 619, 594, 19, muted);
+        centered(layout, keyLegend(settings, GameAction::Pause, "RESUME EXPEDITION").c_str(), 619, 508, 24, teal);
+        centered(layout, actions.c_str(), 619, 594, 19, muted);
         return;
     }
 
@@ -756,7 +1034,14 @@ void GameArt::drawOverlay(const GameLogic& game, const GameVisualState& state,
     label(layout, "STEPS", 786, top + 118, 19, muted);
     label(layout, TextFormat("%i", game.getMoveCount()), 786, top + 144, 37, cream);
 
-    if (progression != nullptr)
+    if (game.isAssisted())
+    {
+        Rectangle icon = scaledRectangle(layout, 273, top + 113, 80, 80);
+        drawMagicHammer(icon.x, icon.y, icon.width / 16.0f);
+        label(layout, "ASSISTED", 379, top + 118, 19, muted);
+        label(layout, "Hammer used", 379, top + 144, 26, amber);
+    }
+    else if (progression != nullptr)
     {
         MedalArt colors = medalArt(state.rewards.medal);
         float entrance = std::clamp(state.resultTime / 0.55f, 0.0f, 1.0f);
@@ -771,7 +1056,7 @@ void GameArt::drawOverlay(const GameLogic& game, const GameVisualState& state,
 
     label(layout, "PERSONAL BEST  /  THIS SEED", 254, top + 226, 18, teal);
     label(layout, TextFormat("Time  %s", best), 254, top + 251, 25, cream);
-    if (progression != nullptr)
+    if (progression != nullptr && !game.isAssisted())
     {
         label(layout, TextFormat("Medal  %s", medalName(state.rewards.bestMedal)), 555, top + 251, 25, cream);
         label(layout, TextFormat("Steps  %i", state.rewards.bestSteps), 786, top + 251, 25, cream);
@@ -805,9 +1090,8 @@ void GameArt::drawOverlay(const GameLogic& game, const GameVisualState& state,
     }
 
     DrawRectangleRec(scaledRectangle(layout, 247, top + height - 82, 744, 1), {98, 63, 48, 255});
-    centered(layout, "N   NEXT EXPEDITION", 619, top + height - 68, 24, amber);
-    centered(layout, "R  NEW SEED     T  REPLAY     ESC  MENU", 619, top + height - 43, 19,
-        muted);
+    centered(layout, keyLegend(settings, GameAction::NextLevel, "NEXT EXPEDITION").c_str(), 619, top + height - 68, 24, amber);
+    centered(layout, actions.c_str(), 619, top + height - 43, 19, muted);
 }
 
 void GameArt::drawAchievementToast(const GameVisualState& state, const GameViewLayout& layout,
@@ -822,7 +1106,7 @@ void GameArt::drawAchievementToast(const GameVisualState& state, const GameViewL
     panel(layout, 1245, top, 307, 153);
     DrawRectangleRec(scaledRectangle(layout, 1245, top, 307 * transition, 2), {235, 149, 63, 255});
     Rectangle icon = scaledRectangle(layout, 1254, top + 11, 43, 43);
-    drawAchievementIcon(icon.x, icon.y, icon.width / 16.0f);
+    if (!drawSecretAchievementIcon(icon, achievement.name)) { drawAchievementIcon(icon.x, icon.y, icon.width / 16.0f); }
     label(layout, "ACHIEVEMENT UNLOCKED", 1300, top + 19, 17, {255, 188, 87, 255});
 
     const float textWidth = 276.0f * layout.scale;
@@ -855,8 +1139,11 @@ void GameArt::drawAchievementToast(const GameVisualState& state, const GameViewL
     }
 }
 
-void GameArt::draw(const GameLogic& game, const GameVisualState& visualState, const Progression* progression) const
+void GameArt::draw(const GameLogic& game, const GameVisualState& visualState,
+    const Progression* progression, const GameSettings* settings) const
 {
+    const GameSettings defaultSettings;
+    const GameSettings& controls = settings == nullptr ? defaultSettings : *settings;
     GameViewLayout layout = createGameViewLayout(GetScreenWidth(), GetScreenHeight(), game, visualState);
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), {7, 8, 12, 255});
     DrawRectangleRec(layout.viewport, {17, 17, 22, 255});
@@ -879,24 +1166,31 @@ void GameArt::draw(const GameLogic& game, const GameVisualState& visualState, co
     int visibleRows = lastRow - firstRow;
     int visibleColumns = lastColumn - firstColumn;
     float pixel = static_cast<float>(layout.tileSize) / 16.0f;
+    auto tileX = [&](int column)
+    {
+        return layout.world.x + static_cast<float>(column * layout.tileSize) - layout.cameraX;
+    };
+    auto tileY = [&](int row)
+    {
+        return layout.world.y + static_cast<float>(row * layout.tileSize) - layout.cameraY;
+    };
     for (int rowIndex = 0; rowIndex < visibleRows; rowIndex++)
     {
         int row = firstRow + rowIndex;
         for (int columnIndex = 0; columnIndex < visibleColumns; columnIndex++)
         {
             int column = firstColumn + columnIndex;
-            float x = layout.world.x + static_cast<float>(column * layout.tileSize) - layout.cameraX;
-            float y = layout.world.y + static_cast<float>(row * layout.tileSize) - layout.cameraY;
+            float x = tileX(column);
+            float y = tileY(row);
             char cell = maze.getCell(row, column);
             if (cell == '#' || cell == '?') { drawWall(maze, row, column, x, y, layout.tileSize, visualState.idleTime); }
             else
             {
                 unsigned int hash = tileHash(row, column);
                 CellFeature feature = game.getCellFeature(row, column);
-                if (feature.hazard == HazardKind::Lava
-                    || (feature.hazard == HazardKind::Fragile && feature.phase == HazardPhase::Active))
+                if (feature.hazard == HazardKind::Lava)
                 {
-                    drawLava(x, y, pixel, hash, visualState.idleTime);
+                    drawLava(game, row, column, x, y, pixel, visualState.idleTime, feature.phaseProgress);
                 }
                 else
                 {
@@ -905,12 +1199,13 @@ void GameArt::draw(const GameLogic& game, const GameVisualState& visualState, co
                 if (cell == 'X') { drawBoulder(x, y, layout.tileSize); }
                 if (cell == '+')
                 {
-                    tilePixel(x, y, pixel, 0, 4, 2, 8, {58, 113, 109, 195});
-                    tilePixel(x, y, pixel, 14, 4, 2, 8, {58, 113, 109, 195});
+                    cornerBrackets(x, y, pixel, 1, 3, 14, 12, {76, 122, 103, 195});
+                    tilePixel(x, y, pixel, 2, 13, 3, 1, {151, 111, 70, 120});
+                    tilePixel(x, y, pixel, 11, 2, 3, 1, {151, 111, 70, 120});
                 }
-                if (feature.hazard == HazardKind::Fragile && feature.phase != HazardPhase::Active)
+                if (feature.hazard == HazardKind::Fragile && feature.phase == HazardPhase::Warning)
                 {
-                    drawFragileFloor(x, y, pixel, feature);
+                    drawFloorWarning(x, y, pixel, feature.phaseProgress);
                 }
                 if (feature.hazard == HazardKind::Spikes) { drawWallSpikes(x, y, pixel, feature); }
                 if (feature.item != ItemKind::None)
@@ -929,29 +1224,70 @@ void GameArt::draw(const GameLogic& game, const GameVisualState& visualState, co
     }
     GridPosition start = maze.getStart();
     GridPosition exit = maze.getExit();
-    drawMarker(layout.world.x + static_cast<float>(start.column * layout.tileSize) - layout.cameraX,
-        layout.world.y + static_cast<float>(start.row * layout.tileSize) - layout.cameraY, layout.tileSize, false, visualState.idleTime);
-    drawMarker(layout.world.x + static_cast<float>(exit.column * layout.tileSize) - layout.cameraX,
-        layout.world.y + static_cast<float>(exit.row * layout.tileSize) - layout.cameraY, layout.tileSize, true, visualState.idleTime);
+    drawMarker(tileX(start.column), tileY(start.row), layout.tileSize, false, visualState.idleTime);
+    drawMarker(tileX(exit.column), tileY(exit.row), layout.tileSize, true, visualState.idleTime);
+    if (game.getHammerUses() > 0)
+    {
+        const int rows[] = {-1, 1, 0, 0};
+        const int columns[] = {0, 0, -1, 1};
+        int facing = std::clamp(visualState.facing, 0, 3);
+        int row = game.getPlayer().getRow() + rows[facing];
+        int column = game.getPlayer().getColumn() + columns[facing];
+        if (game.canBreakWall(row, column))
+        {
+            drawHammerTarget(tileX(column), tileY(row), pixel, visualState.idleTime);
+        }
+    }
+    if (visualState.hammerStrikeFlash > 0.0f)
+    {
+        GridPosition strike = visualState.hammerStrikePosition;
+        if (maze.isInside(strike.row, strike.column))
+        {
+            float x = tileX(strike.column);
+            float y = tileY(strike.row);
+            if (visualState.hammerStrikeFlash > 0.82f)
+            {
+                drawWall(maze, strike.row, strike.column, x, y, layout.tileSize, visualState.idleTime);
+            }
+            drawHammerStrike(x, y, pixel, visualState.hammerStrikeFlash);
+        }
+    }
     float playerX = std::round(layout.world.x + visualState.playerColumn * static_cast<float>(layout.tileSize) - layout.cameraX);
     float playerY = std::round(layout.world.y + visualState.playerRow * static_cast<float>(layout.tileSize) - layout.cameraY);
     float deathProgress = game.isDying() ? game.getDeathProgress() : 0.0f;
-    drawExplorer(playerX, playerY, layout.tileSize, visualState, playerTexture, deathProgress, game.isInLava());
+    bool inLava = game.isInLava();
+    drawPlayer(playerX, playerY, layout.tileSize, visualState, playerTexture, deathProgress, inLava);
+    float lavaFlash = std::max(visualState.lavaEnterFlash, visualState.lavaExitFlash);
+    if (inLava || lavaFlash > 0.0f)
+    {
+        drawLavaContact(playerX, playerY, pixel, visualState.idleTime, std::max(lavaFlash, inLava ? 0.24f : 0.0f));
+    }
     if (game.isDying()) { drawDeath(playerX, playerY, pixel, deathProgress); }
+    if (visualState.respawnFlash > 0.0f) { drawRespawn(playerX, playerY, pixel, visualState.respawnFlash); }
+    if (visualState.hammerGrantFlash > 0.0f) { drawHammerGrant(playerX, playerY, pixel, visualState.hammerGrantFlash); }
     if (visualState.pickupFlash > 0.0f)
     {
         GridPosition collected = game.getLastCollectedPosition();
         if (collected.row >= 0 && collected.column >= 0)
         {
-            drawPickup(layout.world.x + static_cast<float>(collected.column * layout.tileSize) - layout.cameraX,
-                layout.world.y + static_cast<float>(collected.row * layout.tileSize) - layout.cameraY,
-                pixel, std::clamp(visualState.pickupFlash, 0.0f, 1.0f));
+            drawPickup(tileX(collected.column), tileY(collected.row), pixel, std::clamp(visualState.pickupFlash, 0.0f, 1.0f));
         }
     }
     EndScissorMode();
-    drawMap(game, visualState, layout);
+    drawMap(game, visualState, layout, controls);
     label(layout, "VOLCANIC ISLE  /  FIELD NOTES", 34, 863, 16, {125, 116, 108, 255});
-    label(layout, "F11  FULLSCREEN", 1408, 863, 16, {153, 136, 115, 255});
-    drawOverlay(game, visualState, layout, progression);
+    label(layout, keyLegend(controls, GameAction::Fullscreen, "FULLSCREEN").c_str(),
+        1408, 863, 16, {153, 136, 115, 255});
+    drawOverlay(game, visualState, layout, progression, controls);
     if (progression != nullptr) { drawAchievementToast(visualState, layout, *progression); }
+    if (visualState.hammerGrantFlash > 0.0f)
+    {
+        float flash = visualState.hammerGrantFlash;
+        float top = 196.0f - (1.0f - std::min(1.0f, flash * 3.0f)) * 12.0f;
+        panel(layout, 443, top, 352, 56);
+        DrawRectangleRec(scaledRectangle(layout, 443, top, 352.0f * flash, 2), {239, 134, 193, 255});
+        Rectangle icon = scaledRectangle(layout, 455, top + 8, 38, 38);
+        drawMagicHammer(icon.x, icon.y, icon.width / 16.0f);
+        label(layout, "Magic Hammer acquired", 501, top + 13, 26, {255, 210, 156, 255});
+    }
 }

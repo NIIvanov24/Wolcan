@@ -28,6 +28,8 @@
     <ClCompile Include="MenuArt.cpp"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="WindowControls.cpp"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="GameArt.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="GameSettings.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="GameAudio.cpp"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainMenu.h">
@@ -40,5 +42,7 @@
     <ClInclude Include="MenuArt.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="WindowControls.h"><Filter>Header Files</Filter></ClInclude>
     <ClInclude Include="GameArt.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="GameSettings.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="GameAudio.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

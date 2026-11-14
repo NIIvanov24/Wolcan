@@ -20,8 +20,10 @@ MenuLayout createMenuLayout(int screenWidth, int screenHeight)
             {centerX - 94.0f * scale, top + 394.0f * scale, 88.0f * scale, 32.0f * scale},
             {centerX + 2.0f * scale, top + 394.0f * scale, 88.0f * scale, 32.0f * scale},
             {centerX + 98.0f * scale, top + 394.0f * scale, 92.0f * scale, 32.0f * scale},
-            {centerX - 190.0f * scale, top + 579.0f * scale, 154.0f * scale, 38.0f * scale},
-            {centerX - 26.0f * scale, top + 579.0f * scale, 216.0f * scale, 38.0f * scale}
+            {centerX - 190.0f * scale, top + 579.0f * scale, 98.0f * scale, 38.0f * scale},
+            {centerX - 85.0f * scale, top + 579.0f * scale, 161.0f * scale, 38.0f * scale},
+            {centerX + 83.0f * scale, top + 579.0f * scale, 69.0f * scale, 38.0f * scale},
+            {centerX + 159.0f * scale, top + 579.0f * scale, 31.0f * scale, 38.0f * scale}
         }};
 }
 

@@ -21,6 +21,7 @@ public:
     std::uint32_t getSeed() const;
     int getFalseWallCount() const;
     bool visitCell(int row, int column);
+    bool breakWall(int row, int column);
     void resetVisits();
     void generate(std::uint32_t seed);
 

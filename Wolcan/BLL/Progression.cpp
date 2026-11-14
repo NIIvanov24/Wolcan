@@ -10,7 +10,7 @@ namespace
 enum class Achievement
 {
     FirstDescent, VolcanoVeteran, Speedrunner, ShortestRoute, RelicHunter, Flawless,
-    VolcanoSurvivor, Untouchable, AgainstAllOdds, LavaEscapeArtist, PerfectRun, Count
+    VolcanoSurvivor, Untouchable, AgainstAllOdds, LavaEscapeArtist, PerfectRun, ExtremeKnowledge, Cheater, Count
 };
 
 std::uint32_t achievementBit(Achievement achievement)
@@ -71,7 +71,7 @@ bool meetsTarget(const RunSummary& run, double seconds, int steps)
 bool isValidRun(const RunSummary& run, const MedalTargets& targets)
 {
     return isValidSaveKey(run.levelKey) && difficultyTier(run.difficulty) >= 0
-        && run.shortestPath > 0 && run.steps >= run.shortestPath
+        && run.shortestPath > 0 && run.steps > 0 && (run.assisted || run.steps >= run.shortestPath)
         && std::isfinite(run.seconds) && run.seconds >= 0.0 && meetsTarget(run, targets.bronzeSeconds, targets.bronzeSteps)
         && std::isfinite(run.health) && run.health > 0.0 && run.health <= 100.0
         && std::isfinite(run.damageTaken) && run.damageTaken >= 0.0;
@@ -83,17 +83,20 @@ Progression::Progression(const std::string& filePath) : filePath(filePath)
     saved = filePath.empty() || readProfile(filePath, profile);
 }
 
-std::uint32_t Progression::applyChange(const std::function<void(ProfileData&)>& change, int clearIncrement, bool skinChanged)
+std::uint32_t Progression::applyChange(const std::function<void(ProfileData&)>& change, int clearIncrement,
+    bool skinChanged, int hammerBreakIncrement)
 {
     std::uint32_t newAchievements = 0;
     auto apply = [&](ProfileData& current)
     {
         std::uint32_t previouslyUnlocked = current.achievements;
         current.clears = addWithoutOverflow(current.clears, clearIncrement);
+        current.hammerBreaks = addWithoutOverflow(current.hammerBreaks, hammerBreakIncrement);
         change(current);
         unlock(current, Achievement::FirstDescent, current.clears >= 1);
-        unlock(current, Achievement::VolcanoVeteran, current.ranks.size() >= 5);
+        unlock(current, Achievement::VolcanoVeteran, current.completedLevels.size() >= 5);
         unlock(current, Achievement::RelicHunter, !current.collectibles.empty());
+        unlock(current, Achievement::Cheater, current.hammerBreaks >= 5);
         newAchievements = current.achievements & ~previouslyUnlocked;
     };
 
@@ -113,6 +116,7 @@ std::uint32_t Progression::applyChange(const std::function<void(ProfileData&)>& 
     });
     if (!applied) { apply(profile); }
     pendingClears = saved ? 0 : addWithoutOverflow(pendingClears, clearIncrement);
+    pendingHammerBreaks = saved ? 0 : addWithoutOverflow(pendingHammerBreaks, hammerBreakIncrement);
     pendingSkin = !saved && (pendingSkin || skinChanged);
     return newAchievements;
 }
@@ -121,8 +125,10 @@ void Progression::mergePending(ProfileData& current) const
 {
     // A failed write leaves progress available in memory until a later save succeeds.
     current.clears = addWithoutOverflow(current.clears, pendingClears);
+    current.hammerBreaks = addWithoutOverflow(current.hammerBreaks, pendingHammerBreaks);
     current.achievements |= profile.achievements;
     current.collectibles.insert(profile.collectibles.cbegin(), profile.collectibles.cend());
+    current.completedLevels.insert(profile.completedLevels.cbegin(), profile.completedLevels.cend());
     std::for_each(profile.ranks.cbegin(), profile.ranks.cend(), [&current](const auto& entry)
     {
         saveBestRank(current, entry.first, entry.second);
@@ -133,24 +139,36 @@ void Progression::mergePending(ProfileData& current) const
 RunRewards Progression::recordFinish(const RunSummary& run)
 {
     MedalTargets targets = medalTargets(run.shortestPath, run.difficulty);
-    RunRewards rewards{ Medal::Bronze, Medal::Bronze, -1, 0 };
+    RunRewards rewards{ run.assisted ? Medal::None : Medal::Bronze, Medal::None, -1, 0 };
     if (!isValidRun(run, targets)) { return rewards; }
 
-    if (meetsTarget(run, targets.goldSeconds, targets.goldSteps)) { rewards.medal = Medal::Gold; }
-    else if (meetsTarget(run, targets.silverSeconds, targets.silverSteps)) { rewards.medal = Medal::Silver; }
+    if (!run.assisted)
+    {
+        if (meetsTarget(run, targets.goldSeconds, targets.goldSteps)) { rewards.medal = Medal::Gold; }
+        else if (meetsTarget(run, targets.silverSeconds, targets.silverSteps)) { rewards.medal = Medal::Silver; }
+    }
 
     rewards.newAchievements = applyChange([&](ProfileData& current)
     {
-        ProfileRank best = saveBestRank(current, run.levelKey, { run.steps, static_cast<int>(rewards.medal) });
-        rewards.bestSteps = best.bestSteps;
-        rewards.bestMedal = static_cast<Medal>(best.bestMedal);
+        current.completedLevels.insert(run.levelKey);
+        if (!run.assisted)
+        {
+            saveBestRank(current, run.levelKey, { run.steps, static_cast<int>(rewards.medal) });
+        }
+        auto best = current.ranks.find(run.levelKey);
+        if (best != current.ranks.end())
+        {
+            rewards.bestSteps = best->second.bestSteps;
+            rewards.bestMedal = static_cast<Medal>(best->second.bestMedal);
+        }
 
-        bool flawless = run.damageTaken == 0.0;
         bool extraHard = run.difficulty == Difficulty::ExtraHard;
+        unlock(current, Achievement::VolcanoSurvivor, extraHard);
+        if (run.assisted) { return; }
+        bool flawless = run.damageTaken == 0.0;
         unlock(current, Achievement::Speedrunner, meetsTimeTarget(run.seconds, targets.goldSeconds));
         unlock(current, Achievement::ShortestRoute, run.steps == run.shortestPath);
         unlock(current, Achievement::Flawless, flawless);
-        unlock(current, Achievement::VolcanoSurvivor, extraHard);
         unlock(current, Achievement::Untouchable, extraHard && flawless);
         unlock(current, Achievement::AgainstAllOdds, extraHard && run.health <= 10.0);
         unlock(current, Achievement::PerfectRun, extraHard && flawless && rewards.medal == Medal::Gold);
@@ -169,6 +187,17 @@ std::uint32_t Progression::recordLavaEscape()
 {
     if (saved && hasAchievement(profile, Achievement::LavaEscapeArtist)) { return 0; }
     return applyChange([](ProfileData& current) { unlock(current, Achievement::LavaEscapeArtist, true); });
+}
+
+std::uint32_t Progression::recordKonamiCode()
+{
+    if (saved && hasAchievement(profile, Achievement::ExtremeKnowledge)) { return 0; }
+    return applyChange([](ProfileData& current) { unlock(current, Achievement::ExtremeKnowledge, true); });
+}
+
+std::uint32_t Progression::recordHammerBreak()
+{
+    return applyChange([](ProfileData&) {}, 0, false, 1);
 }
 
 int Progression::getAchievementCount() const { return static_cast<int>(Achievement::Count); }
@@ -190,7 +219,9 @@ AchievementInfo Progression::getAchievement(int index) const
         { "Untouchable - Master of the Volcano", "Finish Extra Hard without damage." },
         { "Against All Odds", "Finish Extra Hard with 10 HP or less." },
         { "Lava Escape Artist", "Escape from a lava pit." },
-        { "Perfect Run", "Earn Extra Hard Gold without damage." }
+        { "Perfect Run", "Earn Extra Hard Gold without damage." },
+        { "Extreme ball knowledge!", "Discover the secret tool." },
+        { "Cheater!", "Break five walls with the magic hammer." }
     };
     static_assert(sizeof(text) / sizeof(text[0]) == static_cast<int>(Achievement::Count));
 
@@ -202,7 +233,12 @@ AchievementInfo Progression::getAchievement(int index) const
     if (achievement == Achievement::VolcanoVeteran)
     {
         target = 5;
-        progress = static_cast<int>(std::min(profile.ranks.size(), static_cast<std::size_t>(target)));
+        progress = static_cast<int>(std::min(profile.completedLevels.size(), static_cast<std::size_t>(target)));
+    }
+    if (achievement == Achievement::Cheater)
+    {
+        target = 5;
+        progress = std::min(profile.hammerBreaks, target);
     }
     return { text[index].name, text[index].description, progress, target, unlocked };
 }
@@ -225,6 +261,8 @@ bool Progression::isSkinUnlocked(Skin skin) const
     case Skin::MagmaSpirit: return getCollectibleCount() >= 3;
     case Skin::AshWanderer: return hasAchievement(profile, Achievement::VolcanoVeteran);
     case Skin::CrimsonGuardian: return hasAchievement(profile, Achievement::PerfectRun);
+    case Skin::ObsidianMage: return hasAchievement(profile, Achievement::ExtremeKnowledge);
+    case Skin::CinderWarden: return hasAchievement(profile, Achievement::Cheater);
     }
     return false;
 }
@@ -249,6 +287,8 @@ SkinInfo skinInfo(Skin skin)
     case Skin::MagmaSpirit: return { "Magma Spirit", "Find three unique collectibles." };
     case Skin::AshWanderer: return { "Ash Wanderer", "Finish five different mazes." };
     case Skin::CrimsonGuardian: return { "Crimson Guardian", "Earn the Perfect Run achievement." };
+    case Skin::ObsidianMage: return { "Obsidian Mage", "Discover the secret tool." };
+    case Skin::CinderWarden: return { "Cinder Warden", "Earn the Cheater! achievement." };
     }
     return { "Explorer", "Available from the start." };
 }
@@ -262,6 +302,8 @@ const char* skinAssetName(Skin skin)
     case Skin::MagmaSpirit: return "magma-spirit";
     case Skin::AshWanderer: return "ash-wanderer";
     case Skin::CrimsonGuardian: return "crimson-guardian";
+    case Skin::ObsidianMage: return "obsidian-mage";
+    case Skin::CinderWarden: return "cinder-warden";
     case Skin::Explorer: return "explorer";
     }
     return "explorer";
@@ -274,6 +316,7 @@ const char* medalName(Medal medal)
     case Medal::Gold: return "Gold";
     case Medal::Silver: return "Silver";
     case Medal::Bronze: return "Bronze";
+    case Medal::None: return "None";
     }
     return "Bronze";
 }

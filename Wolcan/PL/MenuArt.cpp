@@ -1,4 +1,6 @@
 #include "MenuArt.h"
+#include "GameSettings.h"
+#include "GameArt.h"
 
 #include <algorithm>
 #include <cmath>
@@ -166,7 +168,7 @@ void MenuArt::drawBackdrop(const MenuLayout& layout, const MenuVisualState& visu
 }
 
 void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState, int selectedSize,
-    Difficulty difficulty, bool hasProfile) const
+    Difficulty difficulty, bool hasProfile, const GameSettings* settings) const
 {
     drawBackdrop(layout, visualState);
     float width = static_cast<float>(GetScreenWidth());
@@ -242,13 +244,22 @@ void MenuArt::draw(const MenuLayout& layout, const MenuVisualState& visualState,
         drawProfileButton(layout.buttons[character], "C  CHARACTER CUSTOMIZATION", scale,
             visualState.hoverAmounts[character] > 0.25f, true);
     }
+    if (settings != nullptr)
+    {
+        int settingsButton = static_cast<int>(MenuAction::Settings);
+        int help = static_cast<int>(MenuAction::Help);
+        drawProfileButton(layout.buttons[settingsButton], "SETTINGS", scale, visualState.hoverAmounts[settingsButton] > 0.25f, true);
+        drawProfileButton(layout.buttons[help], "?", scale, visualState.hoverAmounts[help] > 0.25f, true);
+    }
     drawCentered(bodyFont, "ARROWS: SIZE     ENTER: PLAY     ESC: QUIT", layout.centerX,
-        layout.top + (hasProfile ? 631.0f : 580.0f) * scale, 16.0f * scale, 0.7f * scale,
+        layout.top + (hasProfile || settings != nullptr ? 631.0f : 580.0f) * scale, 16.0f * scale, 0.7f * scale,
         menuOpacity(muted, appearance * 0.9f));
 
     float footerSize = std::clamp(18.0f * scale, 18.0f, 24.0f);
     float footerTop = height - footerSize - 14.0f;
-    DrawTextEx(bodyFont, "F11 – Fullscreen", {24.0f, footerTop}, footerSize, 0.5f, {235, 211, 181, 170});
+    const char* fullscreenKey = settings == nullptr ? "F11" : keyName(settings->key(GameAction::Fullscreen));
+    std::string fullscreenHint = std::string(fullscreenKey) + " – Fullscreen";
+    DrawTextEx(bodyFont, fullscreenHint.c_str(), {24.0f, footerTop}, footerSize, 0.5f, {235, 211, 181, 170});
     const char* islandLabel = "VOLCANIC ISLE / 01";
     Vector2 labelSize = MeasureTextEx(bodyFont, islandLabel, footerSize - 1.0f, 1.0f);
     DrawTextEx(bodyFont, islandLabel, {width - labelSize.x - 24.0f, footerTop}, footerSize - 1.0f, 1.0f, {235, 211, 181, 140});
@@ -307,14 +318,18 @@ void MenuArt::drawProfile(const MenuLayout& layout, const ProfileLayout& profile
             AchievementInfo achievement = progression.getAchievement(index);
             if (achievement.unlocked) { unlockedCount++; }
             float x = 28.0f + static_cast<float>(index % 2) * 406.0f;
-            float y = 103.0f + static_cast<float>(index / 2) * 68.0f;
+            float y = 98.0f + static_cast<float>(index / 2) * 60.0f;
             Color accent = achievement.unlocked ? gold : Color{134, 106, 96, 255};
-            rectangle(x, y, 398, 62, {51, 34, 30, 255});
-            rectangle(x, y, 2, 62, accent);
-            rectangle(x + 14, y + 18, 19, 13, accent);
-            rectangle(x + 18, y + 31, 11, 7, accent);
-            rectangle(x + 21, y + 38, 5, 6, accent);
-            rectangle(x + 17, y + 44, 13, 3, accent);
+            rectangle(x, y, 398, 54, {51, 34, 30, 255});
+            rectangle(x, y, 2, 54, accent);
+            Rectangle icon = {panel.x + (x + 8) * scale, panel.y + (y + 10) * scale, 33 * scale, 33 * scale};
+            if (!drawSecretAchievementIcon(icon, achievement.name))
+            {
+                rectangle(x + 14, y + 13, 19, 13, accent);
+                rectangle(x + 18, y + 26, 11, 7, accent);
+                rectangle(x + 21, y + 33, 5, 6, accent);
+                rectangle(x + 17, y + 39, 13, 3, accent);
+            }
             label(achievement.name, x + 46, y + 7, 22, cream, 283);
             label(achievement.description, x + 46, y + 34, 17, muted, 340);
             const char* progressText = achievement.unlocked ? "DONE" : TextFormat("%i / %i", achievement.progress, achievement.target);
@@ -327,17 +342,17 @@ void MenuArt::drawProfile(const MenuLayout& layout, const ProfileLayout& profile
     }
     else
     {
-        int skinCount = static_cast<int>(Skin::CrimsonGuardian) + 1;
+        int skinCount = static_cast<int>(Skin::CinderWarden) + 1;
         for (int index = 0; index < skinCount; index++)
         {
             Skin skin = static_cast<Skin>(index);
             SkinInfo information = skinInfo(skin);
-            float y = 106.0f + static_cast<float>(index) * 63.0f;
+            float y = 101.0f + static_cast<float>(index) * 50.0f;
             bool previewed = preview == skin;
-            rectangle(28, y, 420, 56, previewed ? Color{91, 49, 34, 255} : Color{50, 33, 29, 255});
-            if (previewed) { rectangle(28, y, 3, 56, gold); }
-            label(information.name, 43, y + 5, 23, cream, 273);
-            label(information.requirement, 43, y + 31, 17, muted, 389);
+            rectangle(28, y, 420, 45, previewed ? Color{91, 49, 34, 255} : Color{50, 33, 29, 255});
+            if (previewed) { rectangle(28, y, 3, 45, gold); }
+            label(information.name, 43, y + 2, 22, cream, 273);
+            label(information.requirement, 43, y + 23, 17, muted, 389);
             const char* status = skin == progression.getSelectedSkin() ? "EQUIPPED" :
                 progression.isSkinUnlocked(skin) ? "AVAILABLE" : "LOCKED";
             label(status, 345, y + 8, 17, previewed ? gold : muted, 91);
@@ -388,4 +403,132 @@ void MenuArt::drawProfile(const MenuLayout& layout, const ProfileLayout& profile
     int backButton = static_cast<int>(ProfileAction::Back);
     drawProfileButton(profileLayout.buttons[backButton], "ESC  BACK", scale, hoveredButton == backButton, true);
     if (!progression.wasSaved()) { label("PROFILE COULD NOT BE SAVED", 174, 543, 18, gold, 470); }
+}
+
+Rectangle MenuArt::optionRectangle(const MenuLayout& layout, float x, float y, float width, float height) const
+{
+    Rectangle panel = createProfileLayout(layout).panel;
+    return {panel.x + x * layout.scale, panel.y + y * layout.scale, width * layout.scale, height * layout.scale};
+}
+
+void MenuArt::drawOptions(const MenuLayout& layout, const MenuVisualState& visualState, const GameSettings& settings,
+    bool help, int editing, const char* message, Vector2 mouse) const
+{
+    drawBackdrop(layout, visualState);
+    Rectangle panel = createProfileLayout(layout).panel;
+    float scale = layout.scale;
+    Color gold = {255, 190, 103, 255};
+    Color cream = {245, 224, 197, 255};
+    Color muted = {185, 160, 142, 255};
+    auto block = [&](float x, float y, float width, float height, Color color)
+    {
+        DrawRectangleRec(optionRectangle(layout, x, y, width, height), color);
+    };
+    auto label = [&](const char* text, float x, float y, float size, Color color)
+    {
+        DrawTextEx(bodyFont, text, {panel.x + x * scale, panel.y + y * scale}, size * scale, 0, color);
+    };
+    auto button = [&](const char* text, float x, float y, float width, float height)
+    {
+        Rectangle bounds = optionRectangle(layout, x, y, width, height);
+        drawProfileButton(bounds, text, scale, CheckCollisionPointRec(mouse, bounds), true);
+    };
+    DrawRectangleRec(panel, {129, 75, 48, 255});
+    block(1, 1, 858, 588, {29, 19, 18, 247});
+    drawCentered(titleFont, help ? "HELP & TIPS" : "SETTINGS", layout.centerX, panel.y + 29 * scale,
+        25 * scale, scale, gold);
+    block(28, 76, 804, 1, {124, 73, 49, 255});
+
+    if (help)
+    {
+        const char* titles[] = {"THE MAZE", "DIFFICULTIES", "HEALTH", "LAVA AND SPIKES",
+            "EXPLORATION", "MEDALS", "REWARDS", "CONTROLS"};
+        const char* lines[8][2] = {
+            {"Find the golden exit. Solid stone blocks movement.", "The minimap shows your position and the exit."},
+            {"Easy has more loops. Normal adds boulders.", "Hard has longer routes. Extra Hard adds traps."},
+            {"You start at 100 HP. Recover 4 HP every 2 seconds", "outside danger. At 0 HP, retry from the same entrance."},
+            {"Escape lava quickly. It slows you and deals 7 HP/s.", "A wall flash warns of spikes: back away or wait."},
+            {"Walk onto glinting artifacts. Try mineral seams.", "Boulders block passages. Find another route."},
+            {"Gold and Silver require both limits beside the map.", "Bronze recognizes a completed maze."},
+            {"See unlock conditions in Achievements.", "Equip unlocked skins in Character Customization."},
+            {"", ""}
+        };
+        const unsigned short icons[8][7] = {
+            {127, 65, 93, 85, 117, 65, 127}, {1, 3, 7, 15, 31, 63, 127},
+            {54, 127, 127, 62, 28, 8, 0}, {8, 10, 28, 62, 62, 28, 8},
+            {8, 28, 62, 127, 62, 28, 8}, {127, 99, 62, 28, 8, 8, 62},
+            {127, 73, 127, 62, 42, 62, 0}, {8, 28, 62, 8, 8, 8, 0}
+        };
+        const int sectionCount = 8;
+        for (int index = 0; index < sectionCount; index++)
+        {
+            float x = 28 + static_cast<float>(index % 2) * 406;
+            float y = 99 + static_cast<float>(index / 2) * 103;
+            block(x, y, 398, 95, {52, 33, 28, 255});
+            const int iconSize = 7;
+            for (int row = 0; row < iconSize; row++)
+            {
+                for (int column = 0; column < iconSize; column++)
+                {
+                    if ((icons[index][row] & (1u << column)) != 0u)
+                    {
+                        block(x + 9 + static_cast<float>(column) * 2, y + 12 + static_cast<float>(row) * 2,
+                            2, 2, gold);
+                    }
+                }
+            }
+            label(titles[index], x + 30, y + 9, 21, gold);
+            if (index == 7)
+            {
+                std::string controls = std::string("Move: ") + keyName(settings.key(GameAction::Up));
+                controls += std::string(" / ") + keyName(settings.key(GameAction::Down));
+                controls += std::string(" / ") + keyName(settings.key(GameAction::Left));
+                controls += std::string(" / ") + keyName(settings.key(GameAction::Right));
+                float width = MeasureTextEx(bodyFont, controls.c_str(), 17 * scale, 0).x;
+                float fontSize = width > 374 * scale ? 17 * 374 * scale / width : 17;
+                label(controls.c_str(), x + 12, y + 41, fontSize, cream);
+                std::string extras = std::string("Pause: ") + keyName(settings.key(GameAction::Pause));
+                extras += std::string("    Menu: ") + keyName(settings.key(GameAction::Menu));
+                label(extras.c_str(), x + 12, y + 62, 17, muted);
+            }
+            else
+            {
+                label(lines[index][0], x + 12, y + 41, 17, cream);
+                label(lines[index][1], x + 12, y + 62, 17, muted);
+            }
+        }
+    }
+    else
+    {
+        label("KEYBOARD BINDINGS", 30, 91, 23, gold);
+        label("AUDIO", 486, 91, 23, gold);
+        const int count = static_cast<int>(GameAction::Count);
+        for (int index = 0; index < count; index++)
+        {
+            float y = 127 + static_cast<float>(index) * 33;
+            GameAction action = static_cast<GameAction>(index);
+            block(28, y, 420, 29, index == editing ? Color{102, 55, 33, 255} : Color{49, 32, 28, 255});
+            std::string actionLabel = action == GameAction::Hammer ? "Use equipped tool" : actionName(action);
+            label(actionLabel.c_str(), 40, y + 3, 19, cream);
+            button(index == editing ? "PRESS A KEY" : keyName(settings.key(action)), 328, y, 120, 29);
+        }
+        const char* labels[2] = {"Music volume", "Sound effects volume"};
+        const int volumes[2] = {settings.musicVolume, settings.effectsVolume};
+        const bool mutedBuses[2] = {settings.musicMuted, settings.effectsMuted};
+        for (int index = 0; index < 2; index++)
+        {
+            float y = 152 + static_cast<float>(index) * 139;
+            block(474, y - 14, 358, 118, {51, 33, 29, 255});
+            label(labels[index], 489, y, 22, cream);
+            label(TextFormat("%i%%", volumes[index]), 756, y, 21, gold);
+            block(489, y + 36, 308, 8, {81, 51, 43, 255});
+            block(489, y + 36, 308 * static_cast<float>(volumes[index]) / 100, 8, gold);
+            block(484 + 308 * static_cast<float>(volumes[index]) / 100, y + 30, 10, 20, cream);
+            button(mutedBuses[index] ? "UNMUTE" : "MUTE", 489, y + 59, 116, 32);
+        }
+        button("RESET TO DEFAULT", 482, 459, 206, 33);
+        label(message, 28, 502, 17, gold);
+    }
+    button("ESC  BACK", 28, 531, 124, 38);
+    if (!settings.wasSaved()) { label("SETTINGS COULD NOT BE SAVED", 170, 542, 17, gold); }
 }

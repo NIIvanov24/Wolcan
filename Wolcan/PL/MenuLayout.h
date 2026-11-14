@@ -3,7 +3,7 @@
 #include "raylib.h"
 
 enum class MenuAction { None = -1, DecreaseSize, IncreaseSize, Start, Quit, Easy, Normal, Hard, ExtraHard,
-    Achievements, Character, Count };
+    Achievements, Character, Settings, Help, Count };
 
 enum class ProfileAction { None = -1, Back, Previous, Next, Confirm, Count };
 

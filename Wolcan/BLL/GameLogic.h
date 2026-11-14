@@ -14,6 +14,11 @@ public:
         std::uint32_t seed = 0, const std::string& recordFile = "");
 
     bool tryMovePlayer(int rowOffset, int columnOffset);
+    bool grantHammer();
+    int getHammerUses() const;
+    bool canBreakWall(int row, int column) const;
+    bool tryBreakWall(int rowOffset, int columnOffset);
+    bool isAssisted() const;
     bool hasWon() const;
     void restart(bool repeatSameMaze = false);
     bool nextLevel();
@@ -50,10 +55,12 @@ private:
     struct TileState
     {
         CellFeature feature;
+        int collapseGroup = 0;
         double collapseAt = -1.0;
         double spikeOffset = 0.0;
         double lastSpikeHit = -1.0;
         std::uint32_t spikeSeed = 0;
+        bool spikeAnchor = false;
     };
 
     struct SpikeTiming
@@ -65,6 +72,8 @@ private:
 
     static constexpr double maxHealth = 100.0;
     static constexpr double fragileWarningSeconds = 0.30;
+    static constexpr double collapseSpreadSeconds = 0.18;
+    static constexpr double lavaDamagePerSecond = 7.0;
     static constexpr double deathAnimationSeconds = 0.80;
 
     Maze maze;
@@ -82,6 +91,9 @@ private:
     int itemCount = 0;
     int itemsCollected = 0;
     int lavaEscapes = 0;
+    bool hammerGranted = false;
+    int hammerUses = 0;
+    bool assisted = false;
     GridPosition lastCollectedPosition = {-1, -1};
     unsigned int attemptRevision = 0;
     double health = maxHealth;
@@ -96,6 +108,9 @@ private:
     CellGrid<int> getDistances(GridPosition start, bool includeSecrets, bool avoidHazards = false) const;
     void generateFeatures();
     void placeHazards(std::mt19937& generator, const CellGrid<int>& ordinaryDistances);
+    void placeFragileTrap(std::mt19937& generator, GridPosition cell, int group,
+        const CellGrid<bool>& eligible, const CellGrid<bool>& reserved);
+    void triggerCollapse(GridPosition cell);
     SpikeTiming getSpikeTiming(const TileState& tile) const;
     void trySpikeHit(TileState& tile, const SpikeTiming& timing);
     void takeDamage(double amount);

@@ -1,5 +1,7 @@
 #include "MainMenu.h"
 #include "GameScreen.h"
+#include "GameAudio.h"
+#include "GameSettings.h"
 #include "raylib.h"
 
 #include <exception>
@@ -22,7 +24,11 @@ std::string recordStoragePath()
         if (length > 1) { return std::string(directory) + "/Wolcan/best-times.txt"; }
     }
 #endif
+#if defined(__EMSCRIPTEN__)
+    return "/user-data/best-times.txt";
+#else
     return std::string(GetApplicationDirectory()) + "user-data/best-times.txt";
+#endif
 }
 
 std::uint32_t requestedSeed(int argumentCount, char* arguments[])
@@ -54,6 +60,7 @@ int main(int argumentCount, char* arguments[])
         return 1;
     }
 
+#if !defined(__EMSCRIPTEN__)
     int monitor = GetCurrentMonitor();
     int availableWidth = GetMonitorWidth(monitor) - 80;
     int availableHeight = GetMonitorHeight(monitor) - 80;
@@ -65,29 +72,34 @@ int main(int argumentCount, char* arguments[])
     if (windowHeight < 540) { windowHeight = 540; }
     SetWindowSize(windowWidth, windowHeight);
     SetWindowMinSize(960, 540);
+#endif
 
     // Escape is handled by each screen: back to menu in-game, quit in menu.
     SetExitKey(KEY_NULL);
+#if !defined(__EMSCRIPTEN__)
     SetTargetFPS(60);
+#endif
 
     int exitCode = 0;
     try
     {
         std::uint32_t seed = requestedSeed(argumentCount, arguments);
         std::string recordFile = recordStoragePath();
-        std::string profileFile = (std::filesystem::path(recordFile).parent_path() / "profile.txt").string();
-        Progression progression(profileFile);
+        std::filesystem::path saveDirectory = std::filesystem::path(recordFile).parent_path();
+        Progression progression((saveDirectory / "profile.txt").string());
+        GameSettings settings((saveDirectory / "settings.txt").string());
+        GameAudio audio;
         while (!WindowShouldClose())
         {
             Difficulty difficulty = Difficulty::Normal;
-            int selectedSize = runMainMenu(&difficulty, &progression);
+            int selectedSize = runMainMenu(&difficulty, &progression, &settings, &audio);
             if (selectedSize == 0 || WindowShouldClose())
             {
                 break;
             }
 
             GameLogic game(selectedSize, selectedSize, difficulty, seed, recordFile);
-            runGame(game, &progression);
+            runGame(game, &progression, &settings, &audio);
         }
     }
     catch (const std::exception& error)
