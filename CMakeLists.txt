@@ -8,16 +8,16 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 option(WOLCAN_BUILD_GAME "Build the raylib presentation layer" ON)
 
-add_library(DAL STATIC Wolcan/DAL/MazeLoader.cpp Wolcan/DAL/SaveManager.cpp Wolcan/DAL/ProfileStore.cpp)
-target_include_directories(DAL PUBLIC Wolcan/DAL)
+add_library(DAL STATIC src/DAL/MazeLoader.cpp src/DAL/SaveManager.cpp src/DAL/ProfileStore.cpp)
+target_include_directories(DAL PUBLIC include)
 
 add_library(BLL STATIC
-    Wolcan/BLL/Maze.cpp
-    Wolcan/BLL/Player.cpp
-    Wolcan/BLL/GameLogic.cpp
-    Wolcan/BLL/Progression.cpp
+    src/BLL/Maze.cpp
+    src/BLL/Player.cpp
+    src/BLL/GameLogic.cpp
+    src/BLL/Progression.cpp
 )
-target_include_directories(BLL PUBLIC Wolcan/BLL)
+target_include_directories(BLL PUBLIC include)
 target_link_libraries(BLL PRIVATE DAL)
 
 if(WOLCAN_BUILD_GAME)
@@ -47,9 +47,9 @@ if(WOLCAN_BUILD_GAME)
     configure_file("${raylib_SOURCE_DIR}/src/raylib.h" "${CMAKE_BINARY_DIR}/raylib/include/raylib.h" COPYONLY)
 
     add_executable(Wolcan
-        Wolcan/PL/Main.cpp Wolcan/PL/MainMenu.cpp Wolcan/PL/GameScreen.cpp
-        Wolcan/PL/MenuLayout.cpp Wolcan/PL/MenuArt.cpp Wolcan/PL/WindowControls.cpp Wolcan/PL/GameArt.cpp
-        Wolcan/PL/GameSettings.cpp Wolcan/PL/GameAudio.cpp)
+        src/PL/Main.cpp src/PL/MainMenu.cpp src/PL/GameScreen.cpp
+        src/PL/MenuLayout.cpp src/PL/MenuArt.cpp src/PL/WindowControls.cpp src/PL/GameArt.cpp
+        src/PL/GameSettings.cpp src/PL/GameAudio.cpp)
     target_link_libraries(Wolcan PRIVATE BLL raylib)
     # Keep assets beside the executable for IDE launches and arbitrary working directories.
     if(EMSCRIPTEN)

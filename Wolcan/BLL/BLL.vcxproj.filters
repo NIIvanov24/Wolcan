@@ -15,30 +15,30 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Maze.cpp">
+    <ClCompile Include="..\..\src\BLL\Maze.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Player.cpp">
+    <ClCompile Include="..\..\src\BLL\Player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameLogic.cpp">
+    <ClCompile Include="..\..\src\BLL\GameLogic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Progression.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\BLL\Progression.cpp"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Maze.h">
+    <ClInclude Include="..\..\include\BLL\Maze.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Player.h">
+    <ClInclude Include="..\..\include\BLL\Player.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameLogic.h">
+    <ClInclude Include="..\..\include\BLL\GameLogic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GameTypes.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="Progression.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\BLL\GameTypes.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\BLL\Progression.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

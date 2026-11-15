@@ -15,34 +15,34 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MainMenu.cpp">
+    <ClCompile Include="..\..\src\PL\MainMenu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="..\..\src\PL\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameScreen.cpp">
+    <ClCompile Include="..\..\src\PL\GameScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MenuLayout.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="MenuArt.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="WindowControls.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="GameArt.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="GameSettings.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="GameAudio.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\PL\MenuLayout.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\PL\MenuArt.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\PL\WindowControls.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\PL\GameArt.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\PL\GameSettings.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\PL\GameAudio.cpp"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MainMenu.h">
+    <ClInclude Include="..\..\include\PL\MainMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameScreen.h">
+    <ClInclude Include="..\..\include\PL\GameScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MenuLayout.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="MenuArt.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="WindowControls.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="GameArt.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="GameSettings.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="GameAudio.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\PL\MenuLayout.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\PL\MenuArt.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\PL\WindowControls.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\PL\GameArt.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\PL\GameSettings.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\PL\GameAudio.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

@@ -140,17 +140,17 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GameLogic.cpp" />
-    <ClCompile Include="Maze.cpp" />
-    <ClCompile Include="Player.cpp" />
-    <ClCompile Include="Progression.cpp" />
+    <ClCompile Include="..\..\src\BLL\GameLogic.cpp" />
+    <ClCompile Include="..\..\src\BLL\Maze.cpp" />
+    <ClCompile Include="..\..\src\BLL\Player.cpp" />
+    <ClCompile Include="..\..\src\BLL\Progression.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Maze.h" />
-    <ClInclude Include="Player.h" />
-    <ClInclude Include="GameLogic.h" />
-    <ClInclude Include="GameTypes.h" />
-    <ClInclude Include="Progression.h" />
+    <ClInclude Include="..\..\include\BLL\Maze.h" />
+    <ClInclude Include="..\..\include\BLL\Player.h" />
+    <ClInclude Include="..\..\include\BLL\GameLogic.h" />
+    <ClInclude Include="..\..\include\BLL\GameTypes.h" />
+    <ClInclude Include="..\..\include\BLL\Progression.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DAL\ConsoleApplication1.vcxproj">
@@ -158,11 +158,6 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="..\ProjectSettings.props" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\DAL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

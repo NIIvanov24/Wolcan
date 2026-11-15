@@ -15,22 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MazeLoader.cpp">
+    <ClCompile Include="..\..\src\DAL\MazeLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SaveManager.cpp">
+    <ClCompile Include="..\..\src\DAL\SaveManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProfileStore.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="..\..\src\DAL\ProfileStore.cpp"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MazeLoader.h">
+    <ClInclude Include="..\..\include\DAL\MazeLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SaveManager.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="ProfileStore.h"><Filter>Header Files</Filter></ClInclude>
-    <ClInclude Include="SaveFile.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\DAL\SaveManager.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\DAL\ProfileStore.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="..\..\include\DAL\SaveFile.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

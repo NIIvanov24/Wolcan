@@ -141,15 +141,15 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="MazeLoader.cpp" />
-    <ClCompile Include="SaveManager.cpp" />
-    <ClCompile Include="ProfileStore.cpp" />
+    <ClCompile Include="..\..\src\DAL\MazeLoader.cpp" />
+    <ClCompile Include="..\..\src\DAL\SaveManager.cpp" />
+    <ClCompile Include="..\..\src\DAL\ProfileStore.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MazeLoader.h" />
-    <ClInclude Include="SaveManager.h" />
-    <ClInclude Include="ProfileStore.h" />
-    <ClInclude Include="SaveFile.h" />
+    <ClInclude Include="..\..\include\DAL\MazeLoader.h" />
+    <ClInclude Include="..\..\include\DAL\SaveManager.h" />
+    <ClInclude Include="..\..\include\DAL\ProfileStore.h" />
+    <ClInclude Include="..\..\include\DAL\SaveFile.h" />
   </ItemGroup>
   <Import Project="..\ProjectSettings.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

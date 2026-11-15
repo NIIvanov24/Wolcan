@@ -142,25 +142,25 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GameScreen.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MainMenu.cpp" />
-    <ClCompile Include="MenuLayout.cpp" />
-    <ClCompile Include="MenuArt.cpp" />
-    <ClCompile Include="WindowControls.cpp" />
-    <ClCompile Include="GameArt.cpp" />
-    <ClCompile Include="GameSettings.cpp" />
-    <ClCompile Include="GameAudio.cpp" />
+    <ClCompile Include="..\..\src\PL\GameScreen.cpp" />
+    <ClCompile Include="..\..\src\PL\Main.cpp" />
+    <ClCompile Include="..\..\src\PL\MainMenu.cpp" />
+    <ClCompile Include="..\..\src\PL\MenuLayout.cpp" />
+    <ClCompile Include="..\..\src\PL\MenuArt.cpp" />
+    <ClCompile Include="..\..\src\PL\WindowControls.cpp" />
+    <ClCompile Include="..\..\src\PL\GameArt.cpp" />
+    <ClCompile Include="..\..\src\PL\GameSettings.cpp" />
+    <ClCompile Include="..\..\src\PL\GameAudio.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MainMenu.h" />
-    <ClInclude Include="GameScreen.h" />
-    <ClInclude Include="MenuLayout.h" />
-    <ClInclude Include="MenuArt.h" />
-    <ClInclude Include="WindowControls.h" />
-    <ClInclude Include="GameArt.h" />
-    <ClInclude Include="GameSettings.h" />
-    <ClInclude Include="GameAudio.h" />
+    <ClInclude Include="..\..\include\PL\MainMenu.h" />
+    <ClInclude Include="..\..\include\PL\GameScreen.h" />
+    <ClInclude Include="..\..\include\PL\MenuLayout.h" />
+    <ClInclude Include="..\..\include\PL\MenuArt.h" />
+    <ClInclude Include="..\..\include\PL\WindowControls.h" />
+    <ClInclude Include="..\..\include\PL\GameArt.h" />
+    <ClInclude Include="..\..\include\PL\GameSettings.h" />
+    <ClInclude Include="..\..\include\PL\GameAudio.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BLL\BLL.vcxproj">

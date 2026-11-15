@@ -7,5 +7,8 @@ Font files obtained from the official google/fonts repository.
 
 Button shapes, pixel chevrons, layout, glow and ember effects are drawn by the game.
 Music and sound effects: original synthesized Wolcan audio.
+Menu trophy, shirt, gear and gamepad: Pixelarticons 2.4.2 by Gerrit Halfmann (MIT).
+Source: https://github.com/halfmage/pixelarticons
+Rasterized to a transparent 24-pixel atlas and tinted in Wolcan. See ui/Pixelarticons-LICENSE.txt.
 Explorer character: original Wolcan pixel art, exported from the game's drawing code to characters/explorer.png.
 Lava Walker, Obsidian Knight, Magma Spirit, Ash Wanderer, Crimson Guardian, Obsidian Mage and Cinder Warden: original Wolcan pixel art.
